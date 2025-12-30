@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledger Official Apps Installer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0d1117;
+            color: #c9d1d9;
+        }
+        h1 {
+            color: #58a6ff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #8b949e;
+            margin-bottom: 30px;
+        }
+        .info-banner {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-left: 4px solid #58a6ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .info-banner h3 {
+            margin: 0 0 10px 0;
+            color: #58a6ff;
+        }
+        .info-banner p {
+            margin: 0;
+            color: #8b949e;
+            font-size: 14px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #2ea043;
+        }
+        button:disabled {
+            background: #21262d;
+            color: #484f58;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: #21262d;
+            border: 1px solid #30363d;
+        }
+        button.secondary:hover {
+            background: #30363d;
+        }
+        button.danger {
+            background: #da3633;
+        }
+        button.danger:hover {
+            background: #f85149;
+        }
+        button.warning {
+            background: #9e6a03;
+            border: 1px solid #d29922;
+        }
+        button.warning:hover {
+            background: #bb8009;
+        }
+        .status-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-card h3 {
+            margin: 0 0 15px 0;
+            color: #c9d1d9;
+            font-size: 16px;
+        }
+        .device-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .info-item {
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 6px;
+        }
+        .info-item label {
+            display: block;
+            color: #8b949e;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .info-item value {
+            display: block;
+            color: #c9d1d9;
+            font-weight: 500;
+        }
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #484f58;
+        }
+        .status-dot.connected {
+            background: #3fb950;
+        }
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .app-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+            transition: border-color 0.2s;
+        }
+        .app-card:hover {
+            border-color: #58a6ff;
+        }
+        .app-card.installed {
+            border-color: #3fb950;
+        }
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            background: #21262d;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .app-name {
+            font-weight: 600;
+            color: #c9d1d9;
+        }
+        .app-version {
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .app-status {
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .app-status.installed {
+            color: #3fb950;
+        }
+        .app-status.not-installed {
+            color: #8b949e;
+        }
+        .app-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .app-actions button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+        }
+        .progress-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .progress-container.active {
+            display: block;
+        }
+        .progress-bar {
+            height: 8px;
+            background: #21262d;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: #58a6ff;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            color: #8b949e;
+            font-size: 14px;
+        }
+        .log-container {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 4px 0;
+            padding: 2px 0;
+        }
+        .log-entry.info { color: #8b949e; }
+        .log-entry.success { color: #3fb950; }
+        .log-entry.error { color: #f85149; }
+        .log-entry.warning { color: #d29922; }
+        .log-time {
+            color: #484f58;
+            margin-right: 8px;
+        }
+        .installed-apps {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .installed-apps h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+        .installed-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .installed-tag {
+            background: #21262d;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .installed-tag .dot {
+            width: 8px;
+            height: 8px;
+            background: #3fb950;
+            border-radius: 50%;
+        }
+        .search-box {
+            width: 100%;
+            padding: 10px 15px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .section-title h3 {
+            margin: 0;
+        }
+        .badge {
+            background: #21262d;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none !important;
+        }
+        /* Featured Apps Sections */
+        .featured-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .featured-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .featured-grid {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .featured-card {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 180px;
+            flex: 1;
+            max-width: 250px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .featured-card:hover {
+            border-color: #58a6ff;
+            transform: translateY(-2px);
+        }
+        .featured-card.bitcoin {
+            border-color: #f7931a;
+        }
+        .featured-card.bitcoin:hover {
+            box-shadow: 0 4px 20px rgba(247, 147, 26, 0.2);
+        }
+        .featured-card.ethereum {
+            border-color: #627eea;
+        }
+        .featured-card.ethereum:hover {
+            box-shadow: 0 4px 20px rgba(98, 126, 234, 0.2);
+        }
+        .featured-card .app-icon {
+            width: 56px;
+            height: 56px;
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        .featured-card .app-icon.bitcoin {
+            background: linear-gradient(135deg, #f7931a 0%, #ffab40 100%);
+            color: white;
+        }
+        .featured-card .app-icon.ethereum {
+            background: linear-gradient(135deg, #627eea 0%, #8c9eff 100%);
+            color: white;
+        }
+        .featured-card .app-icon.solana {
+            background: linear-gradient(135deg, #9945ff 0%, #14f195 100%);
+            color: white;
+        }
+        .featured-card .app-icon.zcash {
+            background: linear-gradient(135deg, #f4b728 0%, #ffd54f 100%);
+            color: white;
+        }
+        .featured-card .app-icon.monero {
+            background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+            color: white;
+        }
+        .featured-card .app-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .featured-card .app-name.ethereum {
+            color: #627eea;
+        }
+        .featured-card .app-name.bitcoin {
+            color: #f7931a;
+        }
+        .featured-card .app-tagline {
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .featured-card .install-status {
+            margin-top: 12px;
+            font-size: 12px;
+        }
+        .featured-card .install-status.installed {
+            color: #3fb950;
+        }
+        .featured-card .install-status.not-installed {
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Ledger App Manager</h1>
+    <p class="subtitle">Install and manage apps on your Ledger device</p>
+    
+    <div class="info-banner">
+        <h3>✨ Works on Production Devices</h3>
+        <p>This installer connects to Ledger's HSM servers to install apps. 
+           No development mode required!</p>
+    </div>
+    
+    <div class="controls">
+        <button id="connectBtn">🔌 Connect Ledger</button>
+        <button id="refreshBtn" class="secondary" disabled>🔄 Refresh</button>
+        <button id="genuineBtn" class="secondary" disabled>✓ Genuine Check</button>
+        <button id="firmwareBtn" class="secondary" disabled>📦 Check Firmware</button>
+        <button id="recoveryBtn" class="danger">🛠️ Bootloader Recovery</button>
+    </div>
+    
+    <div class="status-card">
+        <div class="connection-status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="connectionText">Not connected</span>
+        </div>
+        <div class="device-info" id="deviceInfo">
+            <div class="info-item">
+                <label>Model</label>
+                <value id="deviceModel">-</value>
+            </div>
+            <div class="info-item">
+                <label>Firmware</label>
+                <value id="deviceFirmware">-</value>
+            </div>
+            <div class="info-item">
+                <label>MCU</label>
+                <value id="deviceMcu">-</value>
+            </div>
+            <div class="info-item">
+                <label>Target ID</label>
+                <value id="deviceTarget">-</value>
+            </div>
+        </div>
+    </div>
+    
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Preparing...</div>
+    </div>
+    
+    <div class="installed-apps" id="installedAppsSection">
+        <div class="section-title">
+            <h3>📱 Installed Apps</h3>
+            <span class="badge" id="installedCount">0 apps</span>
+        </div>
+        <div class="installed-list" id="installedList">
+            <span style="color: #8b949e;">Connect device to see installed apps</span>
+        </div>
+    </div>
+    
+    <!-- Top Apps Section -->
+    <div class="featured-section" id="topAppsSection">
+        <h3>⭐ Top Apps</h3>
+        <div class="featured-grid">
+            <div class="featured-card bitcoin" onclick="installApp('Bitcoin')">
+                <div class="app-icon bitcoin">₿</div>
+                <div class="app-name bitcoin">Bitcoin</div>
+                <div class="app-tagline">The original cryptocurrency</div>
+                <div class="install-status not-installed" id="bitcoin-status">Click to install</div>
+            </div>
+            <div class="featured-card ethereum" onclick="installApp('Ethereum')">
+                <div class="app-icon ethereum">Ξ</div>
+                <div class="app-name ethereum">Ethereum</div>
+                <div class="app-tagline">Smart contracts & DeFi</div>
+                <div class="install-status not-installed" id="ethereum-status">Click to install</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Popular Apps Section -->
+    <div class="featured-section" id="popularAppsSection">
+        <h3>🔥 Popular Apps</h3>
+        <div class="featured-grid">
+            <div class="featured-card" onclick="installApp('Solana')">
+                <div class="app-icon solana">◎</div>
+                <div class="app-name">Solana</div>
+                <div class="app-tagline">High-performance blockchain</div>
+                <div class="install-status not-installed" id="solana-status">Click to install</div>
+            </div>
+            <div class="featured-card" onclick="installApp('Zcash')">
+                <div class="app-icon zcash">ⓩ</div>
+                <div class="app-name">Zcash</div>
+                <div class="app-tagline">Privacy-focused currency</div>
+                <div class="install-status not-installed" id="zcash-status">Click to install</div>
+            </div>
+            <div class="featured-card" onclick="installApp('Monero')">
+                <div class="app-icon monero">ɱ</div>
+                <div class="app-name">Monero</div>
+                <div class="app-tagline">Private digital cash</div>
+                <div class="install-status not-installed" id="monero-status">Click to install</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section-title">
+        <h3>📦 Available Apps</h3>
+        <span class="badge" id="availableCount">Loading...</span>
+    </div>
+    
+    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search apps...">
+    
+    <div class="app-grid" id="appGrid">
+        <div style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">
+            Connect your Ledger device to see available apps
+        </div>
+    </div>
+    
+    <div class="section-title">
+        <h3>📋 Activity Log</h3>
+        <button class="secondary" onclick="clearLog()" style="padding: 6px 12px; font-size: 12px;">Clear</button>
+    </div>
+    <div class="log-container" id="log"></div>
+    
+    <script type="module">
+        // Import transport from bundle
+        import { TransportWebHID } from './dist/ledgerjs.bundle.js';
+        
+        // App icons mapping
+        const APP_ICONS = {
+            'Bitcoin': '₿',
+            'Bitcoin Test': '₿',
+            'Ethereum': 'Ξ',
+            'Solana': '◎',
+            'Polygon': '⬡',
+            'Cosmos': '⚛',
+            'Polkadot': '●',
+            'Cardano': '₳',
+            'XRP': '✕',
+            'Stellar': '✦',
+            'Tezos': 'ꜩ',
+            'Avalanche': '🔺',
+            'Near': 'Ⓝ',
+            'Algorand': 'Ⓐ',
+            'default': '📱'
+        };
+        
+        // Ledger API constants
+        const LIVE_COMMON_VERSION = '34.0.0';
+        const PROVIDER = 1;
+        const BASE_API_V1_URL = 'https://manager.api.live.ledger.com/api';
+        const BASE_API_V2_URL = 'https://manager.api.live.ledger.com/api/v2';
+        const BASE_SOCKET_URL = 'wss://scriptrunner.api.live.ledger.com/update';
+        
+        let transport = null;
+        let deviceInfo = null;
+        let availableApps = [];
+        let installedApps = [];
+        
+        // Logging
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="log-time">${time}</span>${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        window.clearLog = function() {
+            document.getElementById('log').innerHTML = '';
+            log('Log cleared', 'info');
+        };
+        
+        function showProgress(show = true) {
+            document.getElementById('progressContainer').classList.toggle('active', show);
+        }
+        
+        function updateProgress(percent, text) {
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('progressText').textContent = text;
+        }
+        
+        // Parse device version response
+        function parseVersionInfo(data) {
+            let i = 0;
+            const targetId = (data[i] << 24) | (data[i+1] << 16) | (data[i+2] << 8) | data[i+3];
+            i += 4;
+            
+            const versionLen = data[i++];
+            const version = new TextDecoder().decode(data.slice(i, i + versionLen));
+            i += versionLen;
+            
+            const flagsLen = data[i++];
+            i += flagsLen;
+            
+            let mcuVersion = null;
+            if (i < data.length) {
+                const mcuLen = data[i++];
+                if (i + mcuLen <= data.length) {
+                    let mcuData = data.slice(i, i + mcuLen);
+                    if (mcuData[mcuData.length - 1] === 0) {
+                        mcuData = mcuData.slice(0, -1);
+                    }
+                    mcuVersion = new TextDecoder().decode(mcuData);
+                }
+            }
+            
+            // Get model name
+            const masked = targetId & 0xFFFF0000;
+            let model = 'Unknown';
+            switch (masked) {
+                case 0x31100000: model = 'Nano S'; break;
+                case 0x33000000: model = 'Nano X'; break;
+                case 0x33100000: model = 'Nano S Plus'; break;
+                case 0x33200000: model = 'Stax'; break;
+                case 0x33300000: model = 'Flex'; break;
+            }
+            
+            return { targetId, version, mcuVersion, model };
+        }
+        
+        // Parse installed apps
+        function parseInstalledApps(data) {
+            const apps = [];
+            let i = 0;
+            
+            if (data.length === 0 || data[i] !== 0x01) return apps;
+            i++;
+            
+            while (i < data.length) {
+                if (data.length < i + 1 + 2 + 2 + 32 + 32 + 1) break;
+                
+                const len = data[i++];
+                i += 2; // blocks
+                i += 2; // flags
+                const hash = data.slice(i, i + 32);
+                i += 32;
+                i += 32; // hash_code_data
+                const nameLen = data[i++];
+                
+                if (data.length < i + nameLen) break;
+                
+                const name = new TextDecoder().decode(data.slice(i, i + nameLen));
+                i += nameLen;
+                
+                apps.push({ name, hash: Array.from(hash) });
+            }
+            
+            return apps;
+        }
+        
+        function bytesToHex(bytes) {
+            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        function hexToBytes(hex) {
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < bytes.length; i++) {
+                bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+            }
+            return bytes;
+        }
+        
+        // Send APDU - transport returns data only (SW already checked, throws on error)
+        async function exchange(cla, ins, p1, p2, data = new Uint8Array(0)) {
+            const apdu = new Uint8Array(5 + data.length);
+            apdu[0] = cla;
+            apdu[1] = ins;
+            apdu[2] = p1;
+            apdu[3] = p2;
+            apdu[4] = data.length;
+            apdu.set(data, 5);
+            return await transport.exchange(apdu);
+        }
+        
+        // Connect to device
+        async function connectDevice() {
+            const btn = document.getElementById('connectBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Connecting...';
+            
+            try {
+                log('Requesting device access...');
+                transport = await TransportWebHID.request(true);
+                
+                log('Getting device info...');
+                // Transport returns data only (throws on error, including locked device 0x5515)
+                const response = await exchange(0xE0, 0x01, 0x00, 0x00);
+                
+                // Response is data only - no SW bytes at end
+                deviceInfo = parseVersionInfo(response);
+                
+                // Update UI
+                document.getElementById('statusDot').classList.add('connected');
+                document.getElementById('connectionText').textContent = 'Connected';
+                document.getElementById('deviceModel').textContent = deviceInfo.model;
+                document.getElementById('deviceFirmware').textContent = deviceInfo.version;
+                document.getElementById('deviceMcu').textContent = deviceInfo.mcuVersion || '-';
+                document.getElementById('deviceTarget').textContent = '0x' + deviceInfo.targetId.toString(16);
+                
+                document.getElementById('refreshBtn').disabled = false;
+                document.getElementById('genuineBtn').disabled = false;
+                document.getElementById('firmwareBtn').disabled = false;
+                
+                log(`Connected to ${deviceInfo.model} (${deviceInfo.version})`, 'success');
+                
+                // Get installed apps and available apps
+                await refreshApps();
+                
+            } catch (error) {
+                log(`Connection failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = transport ? '🔌 Reconnect' : '🔌 Connect Ledger';
+            }
+        }
+        
+        // Refresh apps list
+        async function refreshApps() {
+            try {
+                // Get installed apps
+                log('Listing installed apps...');
+                installedApps = [];
+                
+                // Transport returns data only (throws on error)
+                let response = await exchange(0xE0, 0xDE, 0x00, 0x00);
+                installedApps = installedApps.concat(parseInstalledApps(response));
+                
+                // Continue listing
+                while (true) {
+                    try {
+                        response = await exchange(0xE0, 0xDF, 0x00, 0x00);
+                        if (response.length === 0) break;
+                        installedApps = installedApps.concat(parseInstalledApps(response));
+                    } catch (e) {
+                        // No more apps
+                        break;
+                    }
+                }
+                
+                updateInstalledApps();
+                log(`Found ${installedApps.length} installed app(s)`, 'success');
+                
+                // Get available apps
+                log('Fetching app catalog...');
+                const url = `${BASE_API_V2_URL}/apps/by-target?` + 
+                    `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                    `provider=${PROVIDER}&` +
+                    `target_id=${deviceInfo.targetId}&` +
+                    `firmware_version_name=${deviceInfo.version}`;
+                
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+                
+                availableApps = await resp.json();
+                document.getElementById('availableCount').textContent = `${availableApps.length} apps`;
+                log(`Found ${availableApps.length} available app(s)`, 'success');
+                
+                renderApps();
+                
+            } catch (error) {
+                log(`Failed to refresh: ${error.message}`, 'error');
+            }
+        }
+        
+        // Update installed apps display
+        function updateInstalledApps() {
+            const list = document.getElementById('installedList');
+            const count = document.getElementById('installedCount');
+            
+            count.textContent = `${installedApps.length} app${installedApps.length !== 1 ? 's' : ''}`;
+            
+            if (installedApps.length === 0) {
+                list.innerHTML = '<span style="color: #8b949e;">No apps installed</span>';
+            } else {
+                list.innerHTML = installedApps.map(app => `
+                    <span class="installed-tag">
+                        <span class="dot"></span>
+                        ${app.name}
+                    </span>
+                `).join('');
+            }
+        }
+        
+        // Update featured apps status indicators
+        function updateFeaturedAppsStatus() {
+            const installedNames = installedApps.map(a => a.name.toLowerCase());
+            
+            // Featured apps to check
+            const featuredApps = [
+                { name: 'Bitcoin', elementId: 'bitcoin-status' },
+                { name: 'Ethereum', elementId: 'ethereum-status' },
+                { name: 'Solana', elementId: 'solana-status' },
+                { name: 'Zcash', elementId: 'zcash-status' },
+                { name: 'Monero', elementId: 'monero-status' }
+            ];
+            
+            for (const app of featuredApps) {
+                const el = document.getElementById(app.elementId);
+                if (el) {
+                    const isInstalled = installedNames.includes(app.name.toLowerCase());
+                    el.className = `install-status ${isInstalled ? 'installed' : 'not-installed'}`;
+                    el.textContent = isInstalled ? '✓ Installed' : 'Click to install';
+                }
+            }
+        }
+        
+        // Render available apps
+        function renderApps() {
+            const grid = document.getElementById('appGrid');
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            
+            // Filter and sort alphabetically
+            const filtered = availableApps
+                .filter(app => app.versionName.toLowerCase().includes(search))
+                .sort((a, b) => a.versionName.localeCompare(b.versionName));
+            
+            const installedNames = installedApps.map(a => a.name.toLowerCase());
+            
+            // Update featured apps status
+            updateFeaturedAppsStatus();
+            
+            grid.innerHTML = filtered.map(app => {
+                const isInstalled = installedNames.includes(app.versionName.toLowerCase());
+                const icon = APP_ICONS[app.versionName] || APP_ICONS.default;
+                
+                return `
+                    <div class="app-card ${isInstalled ? 'installed' : ''}" data-app="${app.versionName}">
+                        <div class="app-header">
+                            <div class="app-icon">${icon}</div>
+                            <div>
+                                <div class="app-name">${app.versionName}</div>
+                                <div class="app-version">v${app.version}</div>
+                            </div>
+                        </div>
+                        <div class="app-status ${isInstalled ? 'installed' : 'not-installed'}">
+                            ${isInstalled ? '✓ Installed' : 'Not installed'}
+                        </div>
+                        <div class="app-actions">
+                            <button onclick="installApp('${app.versionName}')" ${isInstalled ? 'class="secondary"' : ''}>
+                                ${isInstalled ? 'Update' : 'Install'}
+                            </button>
+                            ${isInstalled ? `<button class="danger" onclick="openApp('${app.versionName}')">Open</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Get firmware perso
+        async function getFirmwarePerso() {
+            const devVerUrl = `${BASE_API_V1_URL}/get_device_version?` +
+                `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                `provider=${PROVIDER}&` +
+                `target_id=${deviceInfo.targetId}`;
+            
+            const devVerResp = await fetch(devVerUrl);
+            const deviceVersion = await devVerResp.json();
+            
+            const firmUrl = `${BASE_API_V1_URL}/get_firmware_version?` +
+                `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                `device_version=${deviceVersion.id}&` +
+                `version_name=${deviceInfo.version}&` +
+                `provider=${PROVIDER}`;
+            
+            const firmResp = await fetch(firmUrl);
+            const firmwareInfo = await firmResp.json();
+            
+            return firmwareInfo.perso;
+        }
+        
+        // WebSocket communication with HSM
+        async function queryViaWebSocket(url) {
+            return new Promise((resolve, reject) => {
+                const ws = new WebSocket(url);
+                let bulkCount = 0;
+                let bulkTotal = 0;
+                
+                ws.onopen = () => log('Connected to Ledger HSM');
+                
+                ws.onmessage = async (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        
+                        if (msg.query === 'exchange') {
+                            const cmdBytes = hexToBytes(msg.data);
+                            try {
+                                // Transport returns data only (throws on error)
+                                const response = await transport.exchange(cmdBytes);
+                                ws.send(JSON.stringify({
+                                    nonce: msg.nonce,
+                                    response: 'success',
+                                    data: bytesToHex(response)
+                                }));
+                            } catch (e) {
+                                // Transport threw - report error to HSM
+                                ws.send(JSON.stringify({
+                                    nonce: msg.nonce,
+                                    response: 'error',
+                                    data: ''
+                                }));
+                            }
+                            
+                        } else if (msg.query === 'bulk') {
+                            const commands = msg.data || [];
+                            bulkTotal = commands.length;
+                            bulkCount = 0;
+                            
+                            updateProgress(20, `Processing ${bulkTotal} commands...`);
+                            
+                            for (const cmdHex of commands) {
+                                if (!cmdHex) continue;
+                                await transport.exchange(hexToBytes(cmdHex));
+                                bulkCount++;
+                                updateProgress(20 + Math.floor((bulkCount / bulkTotal) * 70), 
+                                    `Processing ${bulkCount}/${bulkTotal}...`);
+                            }
+                            
+                            ws.send(JSON.stringify({
+                                nonce: msg.nonce,
+                                response: 'success',
+                                data: ''
+                            }));
+                            
+                        } else if (msg.query === 'success') {
+                            ws.close();
+                            resolve();
+                        } else if (msg.query === 'error') {
+                            ws.close();
+                            reject(new Error(`HSM error: ${event.data}`));
+                        } else if (msg.query === 'warning') {
+                            log(`HSM warning: ${event.data}`, 'warning');
+                        }
+                    } catch (error) {
+                        ws.close();
+                        reject(error);
+                    }
+                };
+                
+                ws.onerror = () => reject(new Error('WebSocket connection failed'));
+                ws.onclose = (e) => {
+                    if (!e.wasClean && e.code !== 1000) {
+                        reject(new Error(`Connection closed: ${e.code}`));
+                    }
+                };
+            });
+        }
+        
+        // Genuine check
+        window.genuineCheck = async function() {
+            const btn = document.getElementById('genuineBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Checking...';
+            
+            showProgress(true);
+            updateProgress(10, 'Getting firmware info...');
+            
+            try {
+                log('Running genuine check...');
+                const perso = await getFirmwarePerso();
+                
+                updateProgress(20, 'Connecting to HSM...');
+                
+                const wsUrl = `${BASE_SOCKET_URL}/genuine?` +
+                    `targetId=${deviceInfo.targetId}&` +
+                    `perso=${encodeURIComponent(perso)}`;
+                
+                await queryViaWebSocket(wsUrl);
+                
+                updateProgress(100, 'Device is genuine!');
+                log('✓ Device is genuine!', 'success');
+                
+            } catch (error) {
+                log(`Genuine check failed: ${error.message}`, 'error');
+                updateProgress(0, 'Check failed');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✓ Genuine Check';
+                setTimeout(() => showProgress(false), 2000);
+            }
+        };
+        
+        // Firmware check
+        window.checkFirmware = async function() {
+            const btn = document.getElementById('firmwareBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Checking...';
+            
+            showProgress(true);
+            updateProgress(10, 'Checking firmware version...');
+            
+            try {
+                log('Checking for firmware updates...');
+                
+                // Step 1: Get device version from API
+                updateProgress(30, 'Querying Ledger servers...');
+                const devVerUrl = `${BASE_API_V1_URL}/get_device_version?` +
+                    `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                    `provider=${PROVIDER}&` +
+                    `target_id=${deviceInfo.targetId}`;
+                
+                const devVerResp = await fetch(devVerUrl);
+                if (!devVerResp.ok) throw new Error('Failed to get device version from Ledger API');
+                const deviceVersion = await devVerResp.json();
+                log(`Device: ${deviceVersion.name || deviceVersion.display_name}`);
+                
+                // Step 2: Get current firmware version ID
+                updateProgress(50, 'Getting firmware info...');
+                const firmVerUrl = `${BASE_API_V1_URL}/get_firmware_version?` +
+                    `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                    `device_version=${deviceVersion.id}&` +
+                    `version_name=${deviceInfo.version}&` +
+                    `provider=${PROVIDER}`;
+                
+                const firmVerResp = await fetch(firmVerUrl);
+                if (!firmVerResp.ok) throw new Error('Failed to get firmware version info');
+                const firmwareVersion = await firmVerResp.json();
+                log(`Current firmware ID: ${firmwareVersion.id}`);
+                
+                // Step 3: Check for latest firmware
+                updateProgress(70, 'Checking for updates...');
+                const salt = Date.now().toString(16);
+                const latestUrl = `${BASE_API_V1_URL}/get_latest_firmware?` +
+                    `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                    `salt=${salt}&` +
+                    `current_se_firmware_final_version=${firmwareVersion.id}&` +
+                    `device_version=${deviceVersion.id}&` +
+                    `provider=${PROVIDER}`;
+                
+                const latestResp = await fetch(latestUrl);
+                if (!latestResp.ok) throw new Error('Failed to check for firmware updates');
+                const latestInfo = await latestResp.json();
+                
+                updateProgress(90, 'Processing results...');
+                
+                // Store update context for later use
+                window.firmwareUpdateContext = null;
+                
+                // Check if update is available
+                if (latestInfo.se_firmware_osu_version && 
+                    latestInfo.se_firmware_osu_version.next_se_firmware_final_version > 0) {
+                    
+                    const osu = latestInfo.se_firmware_osu_version;
+                    
+                    // Get final firmware info
+                    let targetVersion = 'newer version';
+                    let finalFirmware = null;
+                    try {
+                        const finalFwUrl = `${BASE_API_V1_URL}/firmware_final_versions/${osu.next_se_firmware_final_version}?` +
+                            `livecommonversion=${LIVE_COMMON_VERSION}`;
+                        const finalFwResp = await fetch(finalFwUrl);
+                        if (finalFwResp.ok) {
+                            finalFirmware = await finalFwResp.json();
+                            targetVersion = finalFirmware.version || targetVersion;
+                        }
+                    } catch (e) {
+                        console.log('Could not get target version name:', e);
+                    }
+                    
+                    // Store context for update
+                    window.firmwareUpdateContext = {
+                        osu: osu,
+                        finalFirmware: finalFirmware,
+                        deviceVersion: deviceVersion,
+                        currentVersion: deviceInfo.version,
+                        targetVersion: targetVersion
+                    };
+                    
+                    updateProgress(100, 'Update available!');
+                    log(`⚠️ FIRMWARE UPDATE AVAILABLE`, 'warning');
+                    log(`Current: ${deviceInfo.version} → Available: ${targetVersion}`, 'warning');
+                    log(`Click "Update Firmware" to start the update process`, 'info');
+                    
+                    // Change button to update mode
+                    btn.textContent = '⬆️ Update Firmware';
+                    btn.classList.remove('secondary');
+                    btn.classList.add('warning');
+                    btn.onclick = updateFirmware;
+                    
+                } else {
+                    updateProgress(100, 'Firmware is up to date!');
+                    log(`✓ Firmware is up to date!`, 'success');
+                    log(`Version: ${deviceInfo.version}`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('Firmware check error:', error);
+                log(`Firmware check failed: ${error.message}`, 'error');
+                updateProgress(0, 'Check failed');
+            } finally {
+                btn.disabled = false;
+                if (!window.firmwareUpdateContext) {
+                    btn.textContent = '📦 Check Firmware';
+                }
+                setTimeout(() => showProgress(false), 2000);
+            }
+        };
+        
+        // Firmware update
+        window.updateFirmware = async function() {
+            if (!window.firmwareUpdateContext) {
+                log('No firmware update available. Please check first.', 'error');
+                return;
+            }
+            
+            const ctx = window.firmwareUpdateContext;
+            const btn = document.getElementById('firmwareBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Updating...';
+            
+            showProgress(true);
+            
+            try {
+                log(`Starting firmware update: ${ctx.currentVersion} → ${ctx.targetVersion}`, 'warning');
+                log('⚠️ DO NOT disconnect your device during the update!', 'warning');
+                
+                // Step 1: Install OSU (Operating System Updater)
+                updateProgress(5, 'Installing OSU...');
+                log('Installing OSU (Operating System Updater)...');
+                
+                const osuUrl = `${BASE_SOCKET_URL}/install?` +
+                    `targetId=${deviceInfo.targetId}&` +
+                    `firmware=${encodeURIComponent(ctx.osu.firmware)}&` +
+                    `firmwareKey=${encodeURIComponent(ctx.osu.firmware_key)}&` +
+                    `perso=${encodeURIComponent(ctx.osu.perso)}`;
+                
+                await queryViaWebSocketWithProgress(osuUrl, (progress) => {
+                    updateProgress(5 + progress * 30, `Installing OSU: ${Math.round(progress * 100)}%`);
+                });
+                
+                log('OSU installed. Device will reboot...', 'success');
+                updateProgress(35, 'Waiting for device to reboot...');
+                
+                // Wait for device to reboot and reconnect
+                log('Waiting for device to reboot into bootloader mode...');
+                await waitForDeviceReboot(15000);
+                
+                // Step 2: Flash MCU (may need multiple iterations)
+                updateProgress(40, 'Flashing MCU...');
+                log('Flashing MCU (Microcontroller Unit)...');
+                
+                let mcuIterations = 0;
+                const maxIterations = 5;
+                
+                while (mcuIterations < maxIterations) {
+                    mcuIterations++;
+                    log(`MCU flash attempt ${mcuIterations}/${maxIterations}...`);
+                    
+                    // Get current device info (may be in bootloader mode now)
+                    const bootloaderInfo = await getDeviceInfoRaw();
+                    
+                    // Determine MCU version to flash
+                    // For simplicity, we'll use the MCU associated with the final firmware
+                    const mcuVersion = bootloaderInfo.version; // Current bootloader version
+                    
+                    const mcuUrl = `${BASE_SOCKET_URL}/mcu?` +
+                        `targetId=${bootloaderInfo.targetId}&` +
+                        `version=${encodeURIComponent(mcuVersion)}`;
+                    
+                    try {
+                        await queryViaWebSocketWithProgress(mcuUrl, (progress) => {
+                            updateProgress(40 + progress * 25, `Flashing MCU: ${Math.round(progress * 100)}%`);
+                        });
+                        log('MCU flash complete', 'success');
+                        break;
+                    } catch (e) {
+                        if (e.message.includes('closed') && mcuIterations < maxIterations) {
+                            log('Device rebooted, reconnecting...', 'info');
+                            await waitForDeviceReboot(10000);
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+                
+                // Step 3: Install final firmware
+                updateProgress(70, 'Installing final firmware...');
+                log('Installing final firmware...');
+                
+                // Reconnect to get new device info
+                await waitForDeviceReboot(5000);
+                const finalDeviceInfo = await getDeviceInfoRaw();
+                
+                if (ctx.finalFirmware) {
+                    const finalUrl = `${BASE_SOCKET_URL}/install?` +
+                        `targetId=${finalDeviceInfo.targetId}&` +
+                        `firmware=${encodeURIComponent(ctx.finalFirmware.firmware)}&` +
+                        `firmwareKey=${encodeURIComponent(ctx.finalFirmware.firmware_key)}&` +
+                        `perso=${encodeURIComponent(ctx.finalFirmware.perso)}`;
+                    
+                    await queryViaWebSocketWithProgress(finalUrl, (progress) => {
+                        updateProgress(70 + progress * 25, `Installing firmware: ${Math.round(progress * 100)}%`);
+                    });
+                }
+                
+                updateProgress(100, 'Firmware update complete!');
+                log(`✓ Firmware updated to ${ctx.targetVersion}!`, 'success');
+                log('Please unlock your device to continue.', 'info');
+                
+                // Clear update context
+                window.firmwareUpdateContext = null;
+                
+                // Reset button
+                btn.textContent = '📦 Check Firmware';
+                btn.classList.remove('warning');
+                btn.classList.add('secondary');
+                btn.onclick = checkFirmware;
+                
+            } catch (error) {
+                console.error('Firmware update error:', error);
+                log(`Firmware update failed: ${error.message}`, 'error');
+                log('Your device may need to be restored using Ledger Live.', 'warning');
+                updateProgress(0, 'Update failed');
+            } finally {
+                btn.disabled = false;
+                setTimeout(() => showProgress(false), 3000);
+            }
+        };
+        
+        // WebSocket with progress tracking
+        async function queryViaWebSocketWithProgress(url, onProgress) {
+            return new Promise((resolve, reject) => {
+                const ws = new WebSocket(url);
+                let bulkTotal = 0;
+                let bulkCount = 0;
+                
+                ws.onopen = () => log('Connected to HSM');
+                
+                ws.onmessage = async (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        
+                        if (msg.query === 'exchange') {
+                            const cmdBytes = hexToBytes(msg.data);
+                            try {
+                                const response = await transport.exchange(cmdBytes);
+                                ws.send(JSON.stringify({
+                                    nonce: msg.nonce,
+                                    response: 'success',
+                                    data: bytesToHex(response)
+                                }));
+                            } catch (e) {
+                                ws.send(JSON.stringify({
+                                    nonce: msg.nonce,
+                                    response: 'error',
+                                    data: ''
+                                }));
+                            }
+                            
+                        } else if (msg.query === 'bulk') {
+                            const commands = msg.data || [];
+                            bulkTotal = commands.length;
+                            bulkCount = 0;
+                            
+                            for (const cmdHex of commands) {
+                                if (!cmdHex) continue;
+                                await transport.exchange(hexToBytes(cmdHex));
+                                bulkCount++;
+                                if (onProgress) {
+                                    onProgress(bulkCount / bulkTotal);
+                                }
+                            }
+                            
+                            ws.send(JSON.stringify({
+                                nonce: msg.nonce,
+                                response: 'success',
+                                data: ''
+                            }));
+                            
+                        } else if (msg.query === 'success') {
+                            ws.close();
+                            resolve();
+                        } else if (msg.query === 'error') {
+                            ws.close();
+                            reject(new Error(`HSM error: ${event.data}`));
+                        } else if (msg.query === 'warning') {
+                            log(`HSM warning: ${msg.data || event.data}`, 'warning');
+                        }
+                    } catch (error) {
+                        ws.close();
+                        reject(error);
+                    }
+                };
+                
+                ws.onerror = () => reject(new Error('WebSocket connection failed'));
+                ws.onclose = (e) => {
+                    if (!e.wasClean && e.code !== 1000) {
+                        reject(new Error(`Connection closed: ${e.code}`));
+                    }
+                };
+            });
+        }
+        
+        // Wait for device to reboot and reconnect
+        async function waitForDeviceReboot(message = 'Your Ledger has rebooted.') {
+            // Close existing transport
+            if (transport) {
+                try {
+                    await transport.close();
+                } catch (e) {}
+                transport = null;
+            }
+            
+            // Wait a bit for device to start rebooting
+            await new Promise(r => setTimeout(r, 2000));
+            
+            // Show reconnect modal - always need user gesture for WebHID
+            log('Waiting for device reconnection...', 'info');
+            transport = await showReconnectModal(message);
+            log('Device reconnected', 'success');
+        }
+        
+        // Show a modal/button for user to reconnect device
+        function showReconnectModal(message) {
+            return new Promise((resolve, reject) => {
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.id = 'reconnect-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                `;
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    background: #161b22;
+                    border: 1px solid #30363d;
+                    border-radius: 12px;
+                    padding: 30px;
+                    text-align: center;
+                    max-width: 400px;
+                `;
+                
+                modal.innerHTML = `
+                    <h3 style="color: #c9d1d9; margin: 0 0 15px 0;">🔌 Reconnect Device</h3>
+                    <p id="reconnect-message" style="color: #8b949e; margin: 0 0 20px 0;">
+                        ${message}<br>
+                        Please unlock your device and click below.
+                    </p>
+                    <button id="reconnect-btn" style="
+                        background: #238636;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 6px;
+                        font-size: 16px;
+                        cursor: pointer;
+                    ">🔌 Reconnect Ledger</button>
+                `;
+                
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+                
+                const btn = document.getElementById('reconnect-btn');
+                btn.onclick = async () => {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="loading"></span> Connecting...';
+                    
+                    try {
+                        const t = await TransportWebHID.request(true);
+                        document.body.removeChild(overlay);
+                        resolve(t);
+                    } catch (e) {
+                        btn.disabled = false;
+                        btn.textContent = '🔌 Reconnect Ledger';
+                        document.getElementById('reconnect-message').innerHTML = `
+                            <span style="color: #f85149;">Connection failed: ${e.message}</span><br>
+                            Please try again.
+                        `;
+                    }
+                };
+            });
+        }
+        
+        // Get raw device info
+        async function getDeviceInfoRaw() {
+            const response = await exchange(0xE0, 0x01, 0x00, 0x00);
+            return parseVersionInfo(response);
+        }
+        
+        // Bootloader recovery
+        window.bootloaderRecovery = async function() {
+            const btn = document.getElementById('recoveryBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Recovering...';
+            
+            showProgress(true);
+            updateProgress(5, 'Connecting to device in bootloader mode...');
+            
+            try {
+                log('🛠️ Starting bootloader recovery...', 'warning');
+                log('Connecting to device...', 'info');
+                
+                // Connect to device (may already be connected)
+                if (!transport) {
+                    transport = await TransportWebHID.request(true);
+                }
+                
+                // Get device info - in bootloader mode this returns bootloader version
+                updateProgress(10, 'Getting bootloader info...');
+                const response = await exchange(0xE0, 0x01, 0x00, 0x00);
+                const bootInfo = parseBootloaderInfo(response);
+                
+                log(`Target ID: 0x${bootInfo.targetId.toString(16)}`, 'info');
+                log(`Bootloader version: ${bootInfo.version}`, 'info');
+                if (bootInfo.seTargetId) {
+                    log(`SE Target ID: 0x${bootInfo.seTargetId.toString(16)}`, 'info');
+                }
+                
+                const knownSeTargets = {
+                    0x31100004: 'Nano S',
+                    0x33000004: 'Nano X', 
+                    0x33100004: 'Nano S Plus',
+                    0x33200004: 'Stax',
+                    0x33300004: 'Flex'
+                };
+                
+                // Check if already in normal mode
+                if (knownSeTargets[bootInfo.targetId]) {
+                    log('Device is already in normal mode!', 'success');
+                    updateProgress(100, 'Device is ready!');
+                    return;
+                }
+                
+                // Use SE target ID from bootloader response if available
+                let seTargetId = bootInfo.seTargetId;
+                let deviceName = seTargetId ? knownSeTargets[seTargetId] : null;
+                
+                if (!deviceName) {
+                    // Ask user to select device
+                    log('Could not detect device type, please select...', 'warning');
+                    seTargetId = await selectDeviceType();
+                    deviceName = knownSeTargets[seTargetId];
+                }
+                
+                log(`Device: ${deviceName}`, 'info');
+                
+                // Get bootloader version for MCU flashing
+                const blVersion = bootInfo.version.split('-')[0];
+                
+                // Query API for MCU version to flash
+                updateProgress(20, 'Querying Ledger API...');
+                let targetMcuVersion = blVersion;
+                
+                try {
+                    const devVerUrl = `${BASE_API_V1_URL}/get_device_version?` +
+                        `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                        `provider=${PROVIDER}&` +
+                        `target_id=${seTargetId}`;
+                    
+                    const devVerResp = await fetch(devVerUrl);
+                    if (devVerResp.ok) {
+                        const deviceVersion = await devVerResp.json();
+                        log(`API Device: ${deviceVersion.name}`, 'info');
+                        
+                        // Get MCU versions
+                        const mcuUrl = `${BASE_API_V1_URL}/mcu_versions?livecommonversion=${LIVE_COMMON_VERSION}`;
+                        const mcuResp = await fetch(mcuUrl);
+                        if (mcuResp.ok) {
+                            const allMcus = await mcuResp.json();
+                            const deviceMcus = allMcus.filter(mcu => 
+                                mcu.device_versions && mcu.device_versions.includes(deviceVersion.id)
+                            );
+                            
+                            // Find best MCU
+                            const blMajMin = blVersion.split('.').slice(0, 2).join('.');
+                            for (const mcu of deviceMcus) {
+                                const fromBl = mcu.from_bootloader_version;
+                                if (fromBl && fromBl !== 'none') {
+                                    const fromBlMajMin = fromBl.split('.').slice(0, 2).join('.');
+                                    if (fromBlMajMin === blMajMin) {
+                                        targetMcuVersion = mcu.name;
+                                        log(`Using MCU: ${mcu.name}`, 'success');
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    log(`API query failed, using version ${targetMcuVersion}`, 'warning');
+                }
+                
+                // Flash MCU
+                updateProgress(30, `Flashing MCU ${targetMcuVersion}...`);
+                log(`Flashing MCU version: ${targetMcuVersion}`, 'warning');
+                log('⚠️ DO NOT disconnect your device!', 'warning');
+                
+                const mcuWsUrl = `${BASE_SOCKET_URL}/mcu?` +
+                    `targetId=${bootInfo.targetId}&` +
+                    `version=${encodeURIComponent(targetMcuVersion)}`;
+                
+                try {
+                    await queryViaWebSocketWithProgress(mcuWsUrl, (progress) => {
+                        updateProgress(30 + progress * 60, `Flashing MCU: ${Math.round(progress * 100)}%`);
+                    });
+                    log('MCU flash command completed!', 'success');
+                } catch (e) {
+                    // Connection loss is expected - device reboots
+                    if (e.message.includes('closed') || e.message.includes('WebSocket')) {
+                        log('Device is rebooting (expected)...', 'info');
+                    } else {
+                        throw e;
+                    }
+                }
+                
+                updateProgress(95, 'Waiting for device to restart...');
+                log('MCU flash sent. Device should restart...', 'info');
+                log('', 'info');
+                log('📋 NEXT STEPS:', 'warning');
+                log('1. Wait for your device to restart', 'info');
+                log('2. If it shows "Bootloader" again, click Recovery again', 'info');
+                log('3. If it shows PIN entry, your device is recovered!', 'success');
+                log('4. If recovery keeps looping, you may need Ledger Live', 'warning');
+                
+                updateProgress(100, 'MCU flash sent!');
+                
+            } catch (error) {
+                console.error('Recovery error:', error);
+                log(`Recovery failed: ${error.message}`, 'error');
+                updateProgress(0, 'Recovery failed');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🛠️ Bootloader Recovery';
+                setTimeout(() => showProgress(false), 5000);
+            }
+        };
+        
+        // Parse bootloader mode response (different format than normal mode)
+        function parseBootloaderInfo(data) {
+            // Bootloader response format:
+            // [target_id: 4] [version_len: 1] [version: N] [flags: 4] [mcu_len: 1] [mcu: N] [se_target: 4]
+            let offset = 0;
+            
+            const targetId = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+            offset += 4;
+            
+            const versionLen = data[offset++];
+            const version = new TextDecoder().decode(data.slice(offset, offset + versionLen));
+            offset += versionLen;
+            
+            // Skip flags (4 bytes)
+            offset += 4;
+            
+            let mcuVersion = '';
+            let seTargetId = null;
+            
+            if (offset < data.length) {
+                const mcuLen = data[offset++];
+                if (mcuLen > 0 && offset + mcuLen <= data.length) {
+                    mcuVersion = new TextDecoder().decode(data.slice(offset, offset + mcuLen));
+                    offset += mcuLen;
+                }
+                
+                // SE target ID at end (4 bytes)
+                if (offset + 4 <= data.length) {
+                    seTargetId = (data[offset] << 24) | (data[offset+1] << 16) | (data[offset+2] << 8) | data[offset+3];
+                }
+            }
+            
+            return {
+                targetId,
+                version,
+                mcuVersion,
+                seTargetId
+            };
+        }
+        
+        // Device type selector for unknown bootloaders
+        function selectDeviceType() {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                `;
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    background: #161b22;
+                    border: 1px solid #30363d;
+                    border-radius: 12px;
+                    padding: 30px;
+                    text-align: center;
+                    max-width: 400px;
+                `;
+                
+                modal.innerHTML = `
+                    <h3 style="color: #c9d1d9; margin: 0 0 15px 0;">Select Your Device</h3>
+                    <p style="color: #8b949e; margin: 0 0 20px 0;">
+                        Please select your Ledger model:
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="device-btn" data-target="0x31100004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Nano S</button>
+                        <button class="device-btn" data-target="0x33000004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Nano X</button>
+                        <button class="device-btn" data-target="0x33100004" style="padding: 12px; background: #238636; border: none; border-radius: 6px; color: white; cursor: pointer;">Nano S Plus</button>
+                        <button class="device-btn" data-target="0x33200004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Stax</button>
+                        <button class="device-btn" data-target="0x33300004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Flex</button>
+                    </div>
+                `;
+                
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+                
+                modal.querySelectorAll('.device-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const target = parseInt(btn.dataset.target, 16);
+                        document.body.removeChild(overlay);
+                        resolve(target);
+                    };
+                });
+            });
+        }
+        
+        // Install app
+        window.installApp = async function(appName) {
+            if (!transport || !deviceInfo) {
+                log('Please connect device first', 'error');
+                return;
+            }
+            
+            showProgress(true);
+            updateProgress(5, 'Getting app info...');
+            
+            try {
+                log(`Installing ${appName}...`);
+                
+                // Find app in catalog
+                const app = availableApps.find(a => a.versionName === appName);
+                if (!app) throw new Error('App not found in catalog');
+                
+                log(`Found ${app.versionName} v${app.version}`);
+                updateProgress(15, 'Connecting to HSM...');
+                
+                const wsUrl = `${BASE_SOCKET_URL}/install?` +
+                    `targetId=${deviceInfo.targetId}&` +
+                    `perso=${encodeURIComponent(app.perso)}&` +
+                    `deleteKey=${encodeURIComponent(app.deleteKey)}&` +
+                    `firmware=${encodeURIComponent(app.firmware)}&` +
+                    `firmwareKey=${encodeURIComponent(app.firmwareKey)}&` +
+                    `hash=${encodeURIComponent(app.hash)}`;
+                
+                await queryViaWebSocket(wsUrl);
+                
+                updateProgress(100, 'Installation complete!');
+                log(`✓ ${appName} installed successfully!`, 'success');
+                
+                // Refresh app list
+                await refreshApps();
+                
+            } catch (error) {
+                log(`Installation failed: ${error.message}`, 'error');
+                updateProgress(0, 'Installation failed');
+            } finally {
+                setTimeout(() => showProgress(false), 2000);
+            }
+        };
+        
+        // Open app
+        window.openApp = async function(appName) {
+            try {
+                log(`Opening ${appName}...`);
+                const nameBytes = new TextEncoder().encode(appName);
+                // Transport throws on error, so if we get here it succeeded
+                await exchange(0xE0, 0xD8, 0x00, 0x00, nameBytes);
+                log(`${appName} opened`, 'success');
+            } catch (error) {
+                log(`Failed to open app: ${error.message}`, 'error');
+            }
+        };
+        
+        // Event listeners
+        document.getElementById('connectBtn').addEventListener('click', connectDevice);
+        document.getElementById('refreshBtn').addEventListener('click', refreshApps);
+        document.getElementById('genuineBtn').addEventListener('click', genuineCheck);
+        document.getElementById('firmwareBtn').addEventListener('click', checkFirmware);
+        document.getElementById('recoveryBtn').addEventListener('click', bootloaderRecovery);
+        document.getElementById('searchBox').addEventListener('input', renderApps);
+        
+        log('Ready - Click "Connect Ledger" to start', 'info');
+    </script>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledger App Sideloader</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 { color: #00d4aa; border-bottom: 2px solid #00d4aa; padding-bottom: 10px; }
+        h2 { color: #00d4aa; margin-top: 30px; }
+        .section {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+            color: #aaa;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #0f0f23;
+            color: #eee;
+            font-family: monospace;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #00d4aa;
+        }
+        button {
+            background: #00d4aa;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover { background: #00b894; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        button.danger { background: #e74c3c; }
+        button.danger:hover { background: #c0392b; }
+        button.secondary { background: #3498db; }
+        #log {
+            background: #0f0f23;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+        .log-info { color: #3498db; }
+        .log-success { color: #00d4aa; }
+        .log-error { color: #e74c3c; }
+        .log-warn { color: #f39c12; }
+        .log-debug { color: #888; }
+        .status { display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; }
+        .status.connected { background: #00d4aa; color: #1a1a2e; }
+        .status.disconnected { background: #e74c3c; color: white; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .help { font-size: 12px; color: #888; margin-top: 3px; }
+        .progress { width: 100%; height: 20px; background: #0f0f23; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+        .progress-bar { height: 100%; background: #00d4aa; transition: width 0.3s; }
+        #deviceInfo { background: #0f0f23; padding: 10px; border-radius: 4px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Ledger App Sideloader</h1>
+    
+    <div class="section">
+        <h2>1. Connect Device</h2>
+        <p>Put your Ledger device in <strong>Dashboard mode</strong> (main menu, no app open)</p>
+        
+        <div style="margin: 15px 0;">
+            <label>Device Type</label>
+            <select id="targetId">
+                <option value="0x33100004">Nano S Plus</option>
+                <option value="0x33000004">Nano X</option>
+                <option value="0x31100004">Nano S (legacy)</option>
+                <option value="0x33200004">Stax</option>
+                <option value="0x33300004">Flex</option>
+            </select>
+        </div>
+        
+        <button id="connectBtn">🔌 Connect Device</button>
+        <button id="disconnectBtn" disabled>Disconnect</button>
+        
+        <div id="deviceInfo">
+            <strong>Status:</strong> <span id="connectionStatus" class="status disconnected">Disconnected</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. Application Details</h2>
+        
+        <div class="grid">
+            <div>
+                <label>App Name *</label>
+                <input type="text" id="appName" placeholder="MyApp" value="">
+                <div class="help">Name shown on device</div>
+            </div>
+            <div>
+                <label>App Version</label>
+                <input type="text" id="appVersion" placeholder="1.0.0" value="1.0.0">
+            </div>
+        </div>
+
+        <label>HEX File *</label>
+        <input type="file" id="hexFile" accept=".hex">
+        <div class="help">Intel HEX format (.hex) file from your build</div>
+        
+        <label>Map File (optional - for auto-calculating sizes)</label>
+        <input type="file" id="mapFile" accept=".map">
+        <div class="help">app.map file - automatically computes Data Size and Install Params Size</div>
+        <div id="mapInfo" style="display:none; margin-top: 5px; padding: 8px; background: #0a3d2e; border-radius: 4px; font-size: 12px;">
+            <span style="color: #00d4aa;">✓ Map parsed:</span>
+            <span id="mapDataSize"></span> |
+            <span id="mapInstallParams"></span>
+        </div>
+        
+        <label>Or paste HEX content directly:</label>
+        <textarea id="hexContent" rows="6" placeholder=":020000040800F2
+:1000000000200020ED000008...
+:00000001FF"></textarea>
+
+        <div class="grid">
+            <div>
+                <label>Curves (comma-separated)</label>
+                <input type="text" id="curves" placeholder="secp256k1,ed25519" value="secp256k1">
+                <div class="help">secp256k1, secp256r1, ed25519, bls12381g1</div>
+            </div>
+            <div>
+                <label>BIP32 Paths (comma-separated)</label>
+                <input type="text" id="paths" placeholder="44'/60'/0'" value="">
+                <div class="help">e.g., 44'/60'/0' for Ethereum</div>
+            </div>
+        </div>
+
+        <label>Icon (hex)</label>
+        <input type="text" id="icon" placeholder="Optional - hex encoded icon data">
+
+        <div class="grid">
+            <div>
+                <label>Data Size</label>
+                <input type="number" id="dataSize" value="0" min="0">
+            </div>
+            <div>
+                <label>App Flags</label>
+                <input type="number" id="appFlags" value="0" min="0">
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div>
+                <label>API Level</label>
+                <input type="number" id="apiLevel" value="22" min="0">
+                <div class="help">SDK API level (typically 22 for recent SDKs)</div>
+            </div>
+            <div>
+                <label>Install Params Size</label>
+                <input type="number" id="installParamsSize" value="0" min="0">
+                <div class="help">From app.map: _einstall_parameters - _install_parameters</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <input type="checkbox" id="deleteFirst" checked>
+            <label for="deleteFirst" style="display: inline; margin: 0;">Delete existing app first</label>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>3. Load Application</h2>
+        
+        <button id="loadBtn" disabled>📦 Load Application</button>
+        <button id="deleteBtn" class="danger" disabled>🗑️ Delete App</button>
+        <button id="listBtn" class="secondary" disabled>📋 List Apps</button>
+        
+        <div class="progress" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Log</h2>
+        <button id="clearLogBtn" style="float: right; padding: 5px 10px; font-size: 12px;">Clear</button>
+        <div id="log"></div>
+    </div>
+
+    <script type="module">
+        // === Logging ===
+        function log(msg, type = 'info') {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<span class="log-${type}">[${time}] ${msg}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(`[${type}] ${msg}`);
+        }
+        
+        document.getElementById('clearLogBtn').onclick = () => {
+            document.getElementById('log').innerHTML = '';
+        };
+
+        log('Initializing sideloader...', 'info');
+
+        // === Check WebHID ===
+        if (!navigator.hid) {
+            log('❌ WebHID not supported! Use Chrome/Edge 89+', 'error');
+            log('WebHID requires HTTPS or localhost', 'warn');
+            document.getElementById('connectBtn').disabled = true;
+        } else {
+            log('✓ WebHID supported', 'success');
+        }
+
+        // === Load modules ===
+        let TransportWebHID, loadApp, deleteApp, listApps, getMemInfo, IntelHexParser;
+        let modulesLoaded = false;
+        
+        try {
+            log('Loading modules...', 'info');
+            // Use bundled version for browser compatibility
+            const mod = await import('./dist/ledgerjs.bundle.js');
+            TransportWebHID = mod.TransportWebHID;
+            loadApp = mod.loadApp;
+            deleteApp = mod.deleteApp;
+            listApps = mod.listApps;
+            getMemInfo = mod.getMemInfo;
+            IntelHexParser = mod.IntelHexParser;
+            modulesLoaded = true;
+            log('✓ Modules loaded successfully', 'success');
+            log('Ready - Click "Connect Device" to start', 'info');
+        } catch (e) {
+            log(`❌ Failed to load modules: ${e.message}`, 'error');
+            log('Make sure you are running from a local server (not file://)', 'warn');
+            log('Try: npx serve . OR python3 -m http.server 8080', 'info');
+            console.error('Module load error:', e);
+        }
+
+        // === State ===
+        let transport = null;
+
+        // === Connect ===
+        document.getElementById('connectBtn').onclick = async () => {
+            console.log('Connect button clicked');
+            
+            if (!modulesLoaded) {
+                log('❌ Modules not loaded - cannot connect', 'error');
+                return;
+            }
+            
+            if (!navigator.hid) {
+                log('❌ WebHID not supported', 'error');
+                return;
+            }
+            
+            try {
+                log('Requesting device access...', 'info');
+                log('A popup should appear - select your Ledger device', 'info');
+                
+                transport = await TransportWebHID.request(true);
+                
+                log('✓ Device connected!', 'success');
+                
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                document.getElementById('connectionStatus').className = 'status connected';
+                document.getElementById('deviceInfo').style.display = 'block';
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('loadBtn').disabled = false;
+                document.getElementById('deleteBtn').disabled = false;
+                document.getElementById('listBtn').disabled = false;
+                
+            } catch (e) {
+                console.error('Connection error:', e);
+                log(`❌ Connection failed: ${e.message}`, 'error');
+                if (e.message.includes('No Ledger')) {
+                    log('Did you select a device in the popup?', 'warn');
+                }
+            }
+        };
+
+        // === Disconnect ===
+        document.getElementById('disconnectBtn').onclick = async () => {
+            if (transport) {
+                try {
+                    await transport.close();
+                } catch (e) {
+                    console.error('Close error:', e);
+                }
+                transport = null;
+            }
+            
+            document.getElementById('connectionStatus').textContent = 'Disconnected';
+            document.getElementById('connectionStatus').className = 'status disconnected';
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+            document.getElementById('loadBtn').disabled = true;
+            document.getElementById('deleteBtn').disabled = true;
+            document.getElementById('listBtn').disabled = true;
+            
+            log('Disconnected', 'info');
+        };
+
+        // === Load Application ===
+        document.getElementById('loadBtn').onclick = async () => {
+            if (!transport) {
+                log('❌ Please connect device first', 'error');
+                return;
+            }
+
+            const appName = document.getElementById('appName').value.trim();
+            if (!appName) {
+                log('❌ App name is required', 'error');
+                return;
+            }
+
+            // Get HEX content
+            let hexContent = document.getElementById('hexContent').value.trim();
+            const hexFileInput = document.getElementById('hexFile');
+            
+            if (hexFileInput.files.length > 0) {
+                hexContent = await hexFileInput.files[0].text();
+                log(`Loaded HEX file: ${hexFileInput.files[0].name}`, 'info');
+            }
+            
+            if (!hexContent) {
+                log('❌ HEX file or content is required', 'error');
+                return;
+            }
+
+            // Parse options
+            const targetId = parseInt(document.getElementById('targetId').value);
+            const appVersion = document.getElementById('appVersion').value.trim() || null;
+            const curvesStr = document.getElementById('curves').value.trim();
+            const curves = curvesStr ? curvesStr.split(',').map(c => c.trim()).filter(c => c) : null;
+            const pathsStr = document.getElementById('paths').value.trim();
+            const paths = pathsStr ? pathsStr.split(',').map(p => p.trim()).filter(p => p) : null;
+            const icon = document.getElementById('icon').value.trim() || null;
+            const dataSize = parseInt(document.getElementById('dataSize').value) || 0;
+            const appFlags = parseInt(document.getElementById('appFlags').value) || 0;
+            const apiLevel = parseInt(document.getElementById('apiLevel').value) || 22;
+            const installParamsSize = parseInt(document.getElementById('installParamsSize').value) || 0;
+            const deleteFirst = document.getElementById('deleteFirst').checked;
+
+            // Show progress
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('progressBar').style.width = '10%';
+            document.getElementById('loadBtn').disabled = true;
+
+            try {
+                log(`Target: 0x${targetId.toString(16)}`, 'debug');
+                log(`App: ${appName} v${appVersion || '?'}`, 'info');
+                if (curves) log(`Curves: ${curves.join(', ')}`, 'debug');
+                if (paths) log(`Paths: ${paths.join(', ')}`, 'debug');
+                
+                // Parse HEX to show info
+                const parser = new IntelHexParser(hexContent);
+                const areas = parser.getAreas();
+                const bootAddr = parser.getBootAddr();
+                const codeSize = parser.maxAddr() - parser.minAddr();
+                
+                log(`HEX: ${areas.length} area(s), ${codeSize} bytes, boot=0x${bootAddr.toString(16)}`, 'info');
+                
+                document.getElementById('progressBar').style.width = '20%';
+                
+                log('Establishing secure channel...', 'info');
+                document.getElementById('progressBar').style.width = '30%';
+
+                const hash = await loadApp(transport, {
+                    targetId,
+                    targetVersion: '',  // Required for proper hash calculation
+                    fileName: hexContent,
+                    appName,
+                    appVersion,
+                    curves,
+                    paths,
+                    icon,
+                    dataSize: dataSize > 0 ? dataSize : null,
+                    installParamsSize: installParamsSize > 0 ? installParamsSize : null,
+                    appFlags,
+                    apiLevel,
+                    delete: deleteFirst,
+                    debug: true
+                });
+
+                document.getElementById('progressBar').style.width = '100%';
+                log(`✅ Application loaded successfully!`, 'success');
+                log(`App hash: ${hash}`, 'success');
+
+            } catch (e) {
+                log(`❌ Load failed: ${e.message}`, 'error');
+                console.error('Load error:', e);
+            } finally {
+                document.getElementById('loadBtn').disabled = false;
+                setTimeout(() => {
+                    document.getElementById('progressContainer').style.display = 'none';
+                    document.getElementById('progressBar').style.width = '0%';
+                }, 2000);
+            }
+        };
+
+        // === Delete Application ===
+        document.getElementById('deleteBtn').onclick = async () => {
+            if (!transport) {
+                log('❌ Please connect device first', 'error');
+                return;
+            }
+
+            const appName = document.getElementById('appName').value.trim();
+            if (!appName) {
+                log('❌ App name is required', 'error');
+                return;
+            }
+
+            const targetId = parseInt(document.getElementById('targetId').value);
+
+            if (!confirm(`Delete "${appName}" from device?`)) {
+                return;
+            }
+
+            try {
+                log(`Deleting ${appName}...`, 'info');
+                await deleteApp(transport, appName, targetId, null, true);
+                log(`✅ App "${appName}" deleted`, 'success');
+            } catch (e) {
+                log(`❌ Delete failed: ${e.message}`, 'error');
+                console.error('Delete error:', e);
+            }
+        };
+
+        // === List Applications ===
+        document.getElementById('listBtn').onclick = async () => {
+            if (!transport) {
+                log('❌ Please connect device first', 'error');
+                return;
+            }
+
+            const targetId = parseInt(document.getElementById('targetId').value);
+
+            try {
+                log('Listing installed apps...', 'info');
+                const apps = await listApps(transport, targetId);
+                
+                if (!apps || apps.length === 0) {
+                    log('No apps installed (or unable to list)', 'info');
+                } else {
+                    log(`Found ${apps.length} app(s):`, 'success');
+                    for (const app of apps) {
+                        log(`  - ${app.name || app}`, 'info');
+                    }
+                }
+            } catch (e) {
+                log(`❌ List failed: ${e.message}`, 'error');
+                console.error('List error:', e);
+            }
+        };
+
+        // === Map File Parser ===
+        document.getElementById('mapFile').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                const content = await file.text();
+                const symbols = parseMapFile(content);
+                
+                // Calculate dataSize = _envram_data - _nvram_data
+                let dataSize = 0;
+                if (symbols._envram_data !== undefined && symbols._nvram_data !== undefined) {
+                    dataSize = symbols._envram_data - symbols._nvram_data;
+                }
+                
+                // Calculate installParamsSize = _einstall_parameters - _install_parameters
+                let installParamsSize = 0;
+                if (symbols._einstall_parameters !== undefined && symbols._install_parameters !== undefined) {
+                    installParamsSize = symbols._einstall_parameters - symbols._install_parameters;
+                }
+                
+                // Update form fields
+                document.getElementById('dataSize').value = dataSize;
+                document.getElementById('installParamsSize').value = installParamsSize;
+                
+                // Show info
+                document.getElementById('mapDataSize').textContent = `Data Size: ${dataSize}`;
+                document.getElementById('mapInstallParams').textContent = `Install Params: ${installParamsSize}`;
+                document.getElementById('mapInfo').style.display = 'block';
+                
+                log(`Map file parsed: dataSize=${dataSize}, installParamsSize=${installParamsSize}`, 'success');
+                
+            } catch (err) {
+                log(`❌ Failed to parse map file: ${err.message}`, 'error');
+                console.error('Map parse error:', err);
+            }
+        };
+        
+        // Parse a .map file to extract symbol addresses
+        // Format: "c0deba00 c0deba00        0     1         _nvram_data = ."
+        function parseMapFile(content) {
+            const symbols = {};
+            const lines = content.split('\n');
+            
+            for (const line of lines) {
+                // Match format: "addr1 addr2 ... _symbol_name = ."
+                // Example: "c0deba00 c0deba00        0     1         _nvram_data = ."
+                const match = line.match(/^([0-9a-fA-F]+)\s+[0-9a-fA-F]+\s+.*\s+(_\w+)\s*=\s*\./);
+                if (match) {
+                    const addr = parseInt(match[1], 16);
+                    const name = match[2];
+                    symbols[name] = addr;
+                    console.log(`Found symbol: ${name} = 0x${addr.toString(16)}`);
+                }
+            }
+            
+            console.log('Parsed symbols:', symbols);
+            return symbols;
+        }
+
+        console.log('Sideloader initialized');
+    </script>
+</body>
+</html>
