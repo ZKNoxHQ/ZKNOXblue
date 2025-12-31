@@ -3,380 +3,479 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ledger Official Apps Installer</title>
+    <title>ZKNOX | ZKNOX Blue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f0f2f5;
+            --accent-primary: #7c3aed;
+            --accent-secondary: #a78bfa;
+            --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
+        html {
+            scroll-behavior: smooth;
+        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 1000px;
+            font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: #0a0a0f;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-container {
+            max-width: 1140px;
             margin: 0 auto;
-            padding: 20px;
-            background: #0d1117;
-            color: #c9d1d9;
+            padding: 0 2rem;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        h1 {
-            color: #58a6ff;
-            text-align: center;
-            margin-bottom: 10px;
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
         }
-        .subtitle {
-            text-align: center;
-            color: #8b949e;
-            margin-bottom: 30px;
+        .logo img {
+            height: 48px;
+            width: auto;
         }
-        .info-banner {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-left: 4px solid #58a6ff;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
-        .info-banner h3 {
-            margin: 0 0 10px 0;
-            color: #58a6ff;
+        .nav-link {
+            color: #a78bfa;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
         }
-        .info-banner p {
-            margin: 0;
-            color: #8b949e;
-            font-size: 14px;
+        .nav-link:hover {
+            color: #c4b5fd;
+            background: rgba(167, 139, 250, 0.1);
         }
+        
+        /* Dropdown Navigation */
+        .nav-dropdown {
+            position: relative;
+        }
+        .nav-dropdown > .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .nav-dropdown > .nav-link::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid currentColor;
+            transition: transform 0.2s ease;
+        }
+        .nav-dropdown:hover > .nav-link::after {
+            transform: rotate(180deg);
+        }
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 200px;
+            background: #1a1a25;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            padding: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+        }
+        .nav-dropdown:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(5px);
+        }
+        .dropdown-item {
+            display: block;
+            padding: 0.65rem 1rem;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+        }
+        .dropdown-item:hover {
+            color: #a78bfa;
+            background: rgba(167, 139, 250, 0.1);
+        }
+        .nav-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            padding: 0;
+        }
+        .nav-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+        .github-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .github-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #a78bfa;
+        }
+        .github-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 110px 2rem 40px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .hero-container {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+        }
+        .hero-image {
+            flex: 0 0 250px;
+        }
+        .hero-image img {
+            width: 100%;
+            height: auto;
+            border-radius: var(--radius-lg);
+        }
+        .hero-content {
+            flex: 1;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        .hero-lead {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        main {
+            padding: 2rem 0 4rem;
+        }
+        
+        /* Controls */
         .controls {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
         button {
-            background: #238636;
+            background: var(--accent-primary);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.2s;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
         button:hover {
-            background: #2ea043;
+            background: #6d28d9;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
         button:disabled {
-            background: #21262d;
-            color: #484f58;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         button.secondary {
-            background: #21262d;
-            border: 1px solid #30363d;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
         }
         button.secondary:hover {
-            background: #30363d;
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
         }
         button.danger {
-            background: #da3633;
+            background: var(--danger);
         }
         button.danger:hover {
-            background: #f85149;
+            background: #dc2626;
         }
         button.warning {
-            background: #9e6a03;
-            border: 1px solid #d29922;
+            background: var(--warning);
         }
         button.warning:hover {
-            background: #bb8009;
+            background: #d97706;
         }
+        
+        /* Status Card */
         .status-card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .status-card:hover {
+            box-shadow: var(--shadow-md);
         }
         .status-card h3 {
-            margin: 0 0 15px 0;
-            color: #c9d1d9;
-            font-size: 16px;
+            margin: 0 0 1rem 0;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
         }
         .device-info {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+            gap: 1rem;
         }
         .info-item {
-            background: #0d1117;
-            padding: 12px;
-            border-radius: 6px;
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: var(--radius-md);
         }
         .info-item label {
             display: block;
-            color: #8b949e;
-            font-size: 12px;
-            margin-bottom: 4px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 0.25rem;
         }
         .info-item value {
             display: block;
-            color: #c9d1d9;
-            font-weight: 500;
+            color: var(--text-primary);
+            font-weight: 600;
         }
         .connection-status {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 1rem;
         }
         .status-dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: #484f58;
+            background: var(--text-muted);
         }
         .status-dot.connected {
-            background: #3fb950;
+            background: var(--success);
         }
+        
+        /* Cards */
+        .card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-md);
+        }
+        .card h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* App Grid */
         .app-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
         .app-card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 15px;
-            transition: border-color 0.2s;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            transition: all 0.3s ease;
         }
         .app-card:hover {
-            border-color: #58a6ff;
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
         .app-card.installed {
-            border-color: #3fb950;
+            border-color: var(--success);
         }
         .app-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 10px;
+            margin-bottom: 0.75rem;
         }
         .app-icon {
-            width: 40px;
-            height: 40px;
-            background: #21262d;
-            border-radius: 8px;
+            width: 44px;
+            height: 44px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 1.25rem;
+            color: var(--accent-primary);
         }
         .app-name {
             font-weight: 600;
-            color: #c9d1d9;
+            color: var(--text-primary);
         }
         .app-version {
-            font-size: 12px;
-            color: #8b949e;
+            font-size: 0.8rem;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-muted);
         }
         .app-status {
-            font-size: 12px;
-            margin-bottom: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
         }
         .app-status.installed {
-            color: #3fb950;
+            color: var(--success);
         }
         .app-status.not-installed {
-            color: #8b949e;
+            color: var(--text-muted);
         }
         .app-actions {
             display: flex;
-            gap: 8px;
+            gap: 0.5rem;
         }
         .app-actions button {
             flex: 1;
-            padding: 8px;
-            font-size: 12px;
+            padding: 0.5rem;
+            font-size: 0.85rem;
         }
-        .progress-container {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        .progress-container.active {
-            display: block;
-        }
-        .progress-bar {
-            height: 8px;
-            background: #21262d;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background: #58a6ff;
-            width: 0%;
-            transition: width 0.3s;
-        }
-        .progress-text {
-            color: #8b949e;
-            font-size: 14px;
-        }
-        .log-container {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 15px;
-            max-height: 250px;
-            overflow-y: auto;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-size: 12px;
-        }
-        .log-entry {
-            margin: 4px 0;
-            padding: 2px 0;
-        }
-        .log-entry.info { color: #8b949e; }
-        .log-entry.success { color: #3fb950; }
-        .log-entry.error { color: #f85149; }
-        .log-entry.warning { color: #d29922; }
-        .log-time {
-            color: #484f58;
-            margin-right: 8px;
-        }
-        .installed-apps {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .installed-apps h3 {
-            margin: 0 0 15px 0;
-            font-size: 16px;
-        }
-        .installed-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .installed-tag {
-            background: #21262d;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .installed-tag .dot {
-            width: 8px;
-            height: 8px;
-            background: #3fb950;
-            border-radius: 50%;
-        }
-        .search-box {
-            width: 100%;
-            padding: 10px 15px;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #c9d1d9;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-        .search-box:focus {
-            outline: none;
-            border-color: #58a6ff;
-        }
-        .section-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .section-title h3 {
-            margin: 0;
-        }
-        .badge {
-            background: #21262d;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            color: #8b949e;
-        }
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #30363d;
-            border-top-color: #58a6ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .hidden {
-            display: none !important;
-        }
-        /* Featured Apps Sections */
+        
+        /* Featured Apps */
         .featured-section {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
         }
         .featured-section h3 {
-            margin: 0 0 15px 0;
-            font-size: 16px;
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
         }
         .featured-grid {
             display: flex;
-            gap: 15px;
+            gap: 1rem;
             flex-wrap: wrap;
         }
         .featured-card {
-            background: #21262d;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
             min-width: 180px;
             flex: 1;
-            max-width: 250px;
-            transition: all 0.2s;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
         .featured-card:hover {
-            border-color: #58a6ff;
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-md);
             transform: translateY(-2px);
         }
         .featured-card.bitcoin {
-            border-color: #f7931a;
+            border-color: #f7931a40;
         }
         .featured-card.bitcoin:hover {
-            box-shadow: 0 4px 20px rgba(247, 147, 26, 0.2);
+            border-color: #f7931a;
         }
         .featured-card.ethereum {
-            border-color: #627eea;
+            border-color: #627eea40;
         }
         .featured-card.ethereum:hover {
-            box-shadow: 0 4px 20px rgba(98, 126, 234, 0.2);
+            border-color: #627eea;
         }
         .featured-card .app-icon {
-            width: 56px;
-            height: 56px;
-            font-size: 32px;
-            margin-bottom: 12px;
+            margin-bottom: 0.75rem;
         }
         .featured-card .app-icon.bitcoin {
             background: linear-gradient(135deg, #f7931a 0%, #ffab40 100%);
@@ -387,67 +486,405 @@
             color: white;
         }
         .featured-card .app-icon.solana {
-            background: linear-gradient(135deg, #9945ff 0%, #14f195 100%);
+            background: linear-gradient(135deg, #9945FF 0%, #14F195 100%);
             color: white;
         }
         .featured-card .app-icon.zcash {
             background: linear-gradient(135deg, #f4b728 0%, #ffd54f 100%);
-            color: white;
+            color: #1a1a2e;
         }
         .featured-card .app-icon.monero {
-            background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+            background: linear-gradient(135deg, #ff6600 0%, #ff8a50 100%);
             color: white;
         }
         .featured-card .app-name {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
         }
-        .featured-card .app-name.ethereum {
-            color: #627eea;
-        }
-        .featured-card .app-name.bitcoin {
-            color: #f7931a;
-        }
+        .featured-card .app-name.bitcoin { color: #f7931a; }
+        .featured-card .app-name.ethereum { color: #627eea; }
         .featured-card .app-tagline {
-            font-size: 12px;
-            color: #8b949e;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
         }
         .featured-card .install-status {
-            margin-top: 12px;
-            font-size: 12px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
         }
         .featured-card .install-status.installed {
-            color: #3fb950;
+            color: var(--success);
         }
-        .featured-card .install-status.not-installed {
-            color: #8b949e;
+        
+        /* Progress */
+        .progress-container {
+            background: var(--bg-primary);
+            border: 1px solid var(--accent-primary);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        .progress-container.active {
+            display: block;
+        }
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Installed Apps */
+        .installed-apps {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .installed-apps h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+        }
+        .installed-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .installed-tag {
+            background: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .installed-tag .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+        }
+        
+        /* Search */
+        .search-box {
+            width: 100%;
+            padding: 0.875rem 1.25rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        
+        /* Section Title */
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .section-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .badge {
+            background: var(--bg-secondary);
+            padding: 0.375rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-muted);
+        }
+        
+        /* Log */
+        .log-container {
+            background: #0a0a0f;
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .log-entry {
+            margin: 4px 0;
+            padding: 2px 0;
+        }
+        .log-entry.info { color: #9ca3af; }
+        .log-entry.success { color: #10b981; }
+        .log-entry.error { color: #ef4444; }
+        .log-entry.warning { color: #f59e0b; }
+        .log-time {
+            color: #6b7280;
+            margin-right: 8px;
+        }
+        
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--bg-tertiary);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Footer */
+        footer {
+            background: #0a0a0f;
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(167, 139, 250, 0.2);
+        }
+        .footer-copy {
+            color: #a78bfa;
+            font-size: 0.9rem;
+        }
+        .footer-copy a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .footer-copy a:hover {
+            color: #c4b5fd;
+        }
+        
+        /* Info Banner */
+        .info-banner {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-primary);
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+        }
+        .info-banner h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--accent-primary);
+            font-size: 1rem;
+        }
+        .info-banner p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-container {
+                flex-direction: column;
+                text-align: center;
+            }
+            .hero-image {
+                flex: 0 0 auto;
+                max-width: 200px;
+            }
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: #0a0a0f;
+                flex-direction: column;
+                padding: 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .nav-link {
+                width: 100%;
+                padding: 0.75rem 1rem;
+            }
+            .dropdown-menu {
+                position: static;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                padding-left: 1rem;
+            }
+            .mobile-menu-btn {
+                display: flex;
+            }
+            .github-btn {
+                display: none;
+            }
+        }
+        .mobile-menu-btn {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .mobile-menu-btn span {
+            width: 22px;
+            height: 2px;
+            background: #ffffff;
+            transition: all 0.3s ease;
         }
     </style>
 </head>
 <body>
-    <h1>🔐 Ledger App Manager</h1>
-    <p class="subtitle">Install and manage apps on your Ledger device</p>
-    
-    <div class="info-banner">
-        <h3>✨ Works on Production Devices</h3>
-        <p>This installer connects to Ledger's HSM servers to install apps. 
-           No development mode required!</p>
-    </div>
-    
-    <div class="controls">
-        <button id="connectBtn">🔌 Connect Ledger</button>
-        <button id="refreshBtn" class="secondary" disabled>🔄 Refresh</button>
-        <button id="genuineBtn" class="secondary" disabled>✓ Genuine Check</button>
-        <button id="firmwareBtn" class="secondary" disabled>📦 Check Firmware</button>
-        <button id="recoveryBtn" class="danger">🛠️ Bootloader Recovery</button>
-    </div>
-    
-    <div class="status-card">
-        <div class="connection-status">
-            <span class="status-dot" id="statusDot"></span>
-            <span id="connectionText">Not connected</span>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="https://zknox.com" class="logo"><img src="zknox-logo.png" alt="ZKNOX"></a>
+            
+            <div class="nav-links">
+                <a href="https://zknox.com" class="nav-link">Home</a>
+                
+                <div class="nav-dropdown">
+                    <a href="https://zknox.com/technologies.html" class="nav-link">Technologies</a>
+                    <div class="dropdown-menu">
+                        <a href="https://zknox.com/tech-ecc.html" class="dropdown-item">Elliptic Curves</a>
+                        <a href="https://zknox.com/tech-hw.html" class="dropdown-item">Hardware Wallets</a>
+                        <a href="https://zknox.com/tech-mpc.html" class="dropdown-item">MPC</a>
+                        <a href="https://zknox.com/tech-pqc.html" class="dropdown-item">Post-Quantum Cryptography</a>
+                        <a href="https://zknox.com/tech-zk.html" class="dropdown-item">Zero Knowledge</a>
+                    </div>
+                </div>
+                
+                <div class="nav-dropdown">
+                    <a href="https://zknox.com/products.html" class="nav-link">Products</a>
+                    <div class="dropdown-menu">
+                        <a href="https://zknox.com/products.html#libraries" class="dropdown-item">Cryptographic Libraries</a>
+                        <a href="https://zknox.com/products.html#hardware" class="dropdown-item">Hardware Integration</a>
+                        <a href="https://zknox.com/products.html#contracts" class="dropdown-item">Smart Contracts</a>
+                        <a href="https://zknox.com/products.html#zk" class="dropdown-item">ZK Circuits</a>
+                    </div>
+                </div>
+                
+                <div class="nav-dropdown">
+                    <a href="tools.html" class="nav-link">Tools</a>
+                    <div class="dropdown-menu">
+                        <a href="official-apps.html" class="dropdown-item">ZKNOX Blue</a>
+                        <a href="sideloader.html" class="dropdown-item">ZKNOX Sideloader</a>
+                        <a href="https://zknox.com/demo-pqbip39.html" class="dropdown-item">PQBIP39</a>
+                        <a href="https://zknox.com/demo-zk-hardware.html" class="dropdown-item">ZK-Hardware</a>
+                    </div>
+                </div>
+                
+                <div class="nav-dropdown">
+                    <a href="https://zknox.com/research.html" class="nav-link">Research</a>
+                    <div class="dropdown-menu">
+                        <a href="https://zknox.com/blog.html" class="dropdown-item">Blog</a>
+                        <a href="https://zknox.com/eips.html" class="dropdown-item">EIPs</a>
+                        <a href="https://zknox.com/hackathons.html" class="dropdown-item">Hackathons</a>
+                        <a href="https://zknox.com/papers.html" class="dropdown-item">Papers</a>
+                        <a href="https://zknox.com/talks.html" class="dropdown-item">Talks</a>
+                    </div>
+                </div>
+                
+                <div class="nav-dropdown">
+                    <a href="https://zknox.com/services.html" class="nav-link">Services</a>
+                    <div class="dropdown-menu">
+                        <a href="https://zknox.com/services.html#audits" class="dropdown-item">Audits</a>
+                        <a href="https://zknox.com/services.html#design" class="dropdown-item">Design</a>
+                        <a href="https://zknox.com/services.html#hardware" class="dropdown-item">Hardware Integration</a>
+                        <a href="https://zknox.com/services.html#implementation" class="dropdown-item">Implementation</a>
+                    </div>
+                </div>
+                
+                <a href="https://zknox.com/team.html" class="nav-link">Team</a>
+                <a href="https://x.com/zknoxHQ" class="nav-link nav-icon" target="_blank" title="X/Twitter">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                </a>
+            </div>
+
+            <a href="https://github.com/ZKNoxHQ" class="github-btn" target="_blank">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                GitHub
+            </a>
+
+            <button class="mobile-menu-btn" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-container">
+            <div class="hero-image">
+                <img src="hero-image.png" alt="ZKNOX Security">
+            </div>
+            <div class="hero-content">
+                <h1>ZKNOX Blue</h1>
+                <p class="hero-lead">
+                    Install and manage genuine Ledger apps on your hardware wallet.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="info-banner">
+                <h3>🔒 HSM-Powered Installation</h3>
+                <p>Apps are installed using Ledger's genuine HSM infrastructure. Your device communicates directly with Ledger's secure servers—no private keys are exposed.</p>
+            </div>
+    
+            <div class="controls">
+                <button id="connectBtn">🔌 Connect Ledger</button>
+                <button id="refreshBtn" class="secondary" disabled>🔄 Refresh</button>
+                <button id="genuineBtn" class="secondary" disabled>✓ Genuine Check</button>
+                <button id="firmwareBtn" class="secondary" disabled>📦 Check Firmware</button>
+            </div>
+    
+            <div class="status-card">
+                <h3>📱 Device Status</h3>
+                <div class="connection-status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="connectionText">Not connected</span>
+                </div>
         <div class="device-info" id="deviceInfo">
             <div class="info-item">
                 <label>Model</label>
@@ -481,7 +918,7 @@
             <span class="badge" id="installedCount">0 apps</span>
         </div>
         <div class="installed-list" id="installedList">
-            <span style="color: #8b949e;">Connect device to see installed apps</span>
+            <span style="color: var(--text-muted);">Connect device to see installed apps</span>
         </div>
     </div>
     
@@ -537,7 +974,7 @@
     <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search apps...">
     
     <div class="app-grid" id="appGrid">
-        <div style="color: #8b949e; grid-column: 1/-1; text-align: center; padding: 40px;">
+        <div style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px;">
             Connect your Ledger device to see available apps
         </div>
     </div>
@@ -548,6 +985,14 @@
     </div>
     <div class="log-container" id="log"></div>
     
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-copy">Copyright © 2025 <a href="https://zknox.com">ZKNOX</a> All rights reserved.</p>
+    </footer>
+
     <script type="module">
         // Import transport from bundle
         import { TransportWebHID } from './dist/ledgerjs.bundle.js';
@@ -572,7 +1017,7 @@
         };
         
         // Ledger API constants
-        const LIVE_COMMON_VERSION = '34.0.0';
+        const LIVE_COMMON_VERSION = '34.8.0';
         const PROVIDER = 1;
         const BASE_API_V1_URL = 'https://manager.api.live.ledger.com/api';
         const BASE_API_V2_URL = 'https://manager.api.live.ledger.com/api/v2';
@@ -610,30 +1055,38 @@
         
         // Parse device version response
         function parseVersionInfo(data) {
+            console.log('Parsing version info, data length:', data.length, 'data:', bytesToHex(data));
+            
             let i = 0;
             const targetId = (data[i] << 24) | (data[i+1] << 16) | (data[i+2] << 8) | data[i+3];
             i += 4;
+            console.log('Target ID:', '0x' + targetId.toString(16));
             
             const versionLen = data[i++];
             const version = new TextDecoder().decode(data.slice(i, i + versionLen));
             i += versionLen;
+            console.log('Version:', version, '(len:', versionLen, ')');
             
             const flagsLen = data[i++];
+            const flags = data.slice(i, i + flagsLen);
             i += flagsLen;
+            console.log('Flags:', bytesToHex(flags), '(len:', flagsLen, ')');
             
             let mcuVersion = null;
             if (i < data.length) {
                 const mcuLen = data[i++];
                 if (i + mcuLen <= data.length) {
                     let mcuData = data.slice(i, i + mcuLen);
-                    if (mcuData[mcuData.length - 1] === 0) {
+                    // Remove trailing null if present
+                    if (mcuData.length > 0 && mcuData[mcuData.length - 1] === 0) {
                         mcuData = mcuData.slice(0, -1);
                     }
                     mcuVersion = new TextDecoder().decode(mcuData);
+                    console.log('MCU Version:', mcuVersion, '(len:', mcuLen, ')');
                 }
             }
             
-            // Get model name
+            // Get model name - mask top 16 bits
             const masked = targetId & 0xFFFF0000;
             let model = 'Unknown';
             switch (masked) {
@@ -643,6 +1096,7 @@
                 case 0x33200000: model = 'Stax'; break;
                 case 0x33300000: model = 'Flex'; break;
             }
+            console.log('Model:', model, '(masked:', '0x' + masked.toString(16), ')');
             
             return { targetId, version, mcuVersion, model };
         }
@@ -771,18 +1225,96 @@
                 
                 // Get available apps
                 log('Fetching app catalog...');
-                const url = `${BASE_API_V2_URL}/apps/by-target?` + 
+                let url = `${BASE_API_V2_URL}/apps/by-target?` + 
                     `livecommonversion=${LIVE_COMMON_VERSION}&` +
                     `provider=${PROVIDER}&` +
                     `target_id=${deviceInfo.targetId}&` +
                     `firmware_version_name=${deviceInfo.version}`;
                 
-                const resp = await fetch(url);
-                if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+                console.log('Fetching apps from:', url);
+                let resp = await fetch(url);
+                console.log('API response status:', resp.status);
+                if (!resp.ok) {
+                    const errorText = await resp.text();
+                    console.error('API error response:', errorText);
+                    throw new Error(`API error: ${resp.status}`);
+                }
                 
                 availableApps = await resp.json();
+                console.log('Available apps:', availableApps.length);
+                
+                // Track if we're using apps from a different firmware version
+                window.appsFirmwareVersion = deviceInfo.version;
+                window.firmwareUpdateNeeded = false;
+                
+                // If no apps found, try with latest known firmware version
+                if (availableApps.length === 0) {
+                    log(`No apps found for firmware ${deviceInfo.version}, checking for newer firmware...`, 'warning');
+                    
+                    try {
+                        const devVerUrl = `${BASE_API_V1_URL}/get_device_version?` +
+                            `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                            `provider=${PROVIDER}&` +
+                            `target_id=${deviceInfo.targetId}`;
+                        
+                        const devVerResp = await fetch(devVerUrl);
+                        if (devVerResp.ok) {
+                            const deviceVersion = await devVerResp.json();
+                            console.log('Device version from API:', deviceVersion);
+                            
+                            if (deviceVersion.se_firmware_final_versions && deviceVersion.se_firmware_final_versions.length > 0) {
+                                const latestFwId = deviceVersion.se_firmware_final_versions[deviceVersion.se_firmware_final_versions.length - 1];
+                                const fwUrl = `${BASE_API_V1_URL}/firmware_final_versions/${latestFwId}?livecommonversion=${LIVE_COMMON_VERSION}`;
+                                const fwResp = await fetch(fwUrl);
+                                if (fwResp.ok) {
+                                    const fwInfo = await fwResp.json();
+                                    console.log('Latest firmware info:', fwInfo);
+                                    
+                                    if (fwInfo.version && fwInfo.version !== deviceInfo.version) {
+                                        log(`Latest firmware is ${fwInfo.version}, your device has ${deviceInfo.version}`, 'info');
+                                        
+                                        // Try to get apps for the latest firmware
+                                        url = `${BASE_API_V2_URL}/apps/by-target?` + 
+                                            `livecommonversion=${LIVE_COMMON_VERSION}&` +
+                                            `provider=${PROVIDER}&` +
+                                            `target_id=${deviceInfo.targetId}&` +
+                                            `firmware_version_name=${fwInfo.version}`;
+                                        
+                                        resp = await fetch(url);
+                                        if (resp.ok) {
+                                            const fallbackApps = await resp.json();
+                                            console.log('Fallback apps:', fallbackApps.length);
+                                            
+                                            if (fallbackApps.length > 0) {
+                                                availableApps = fallbackApps;
+                                                window.appsFirmwareVersion = fwInfo.version;
+                                                window.firmwareUpdateNeeded = true;
+                                                
+                                                log(`⚠️ FIRMWARE UPDATE REQUIRED`, 'error');
+                                                log(`Apps are available for firmware ${fwInfo.version}`, 'warning');
+                                                log(`Your device has firmware ${deviceInfo.version}`, 'warning');
+                                                log(`Please update firmware using "Check Firmware" button first!`, 'warning');
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Fallback query failed:', e);
+                    }
+                }
+                
                 document.getElementById('availableCount').textContent = `${availableApps.length} apps`;
-                log(`Found ${availableApps.length} available app(s)`, 'success');
+                if (availableApps.length > 0) {
+                    if (window.firmwareUpdateNeeded) {
+                        log(`Found ${availableApps.length} app(s) (require firmware update)`, 'warning');
+                    } else {
+                        log(`Found ${availableApps.length} available app(s)`, 'success');
+                    }
+                } else {
+                    log(`No apps found for this device/firmware combination`, 'warning');
+                }
                 
                 renderApps();
                 
@@ -799,7 +1331,7 @@
             count.textContent = `${installedApps.length} app${installedApps.length !== 1 ? 's' : ''}`;
             
             if (installedApps.length === 0) {
-                list.innerHTML = '<span style="color: #8b949e;">No apps installed</span>';
+                list.innerHTML = '<span style="color: var(--text-muted);">No apps installed</span>';
             } else {
                 list.innerHTML = installedApps.map(app => `
                     <span class="installed-tag">
@@ -1061,9 +1593,6 @@
                 
                 updateProgress(90, 'Processing results...');
                 
-                // Store update context for later use
-                window.firmwareUpdateContext = null;
-                
                 // Check if update is available
                 if (latestInfo.se_firmware_osu_version && 
                     latestInfo.se_firmware_osu_version.next_se_firmware_final_version > 0) {
@@ -1072,38 +1601,22 @@
                     
                     // Get final firmware info
                     let targetVersion = 'newer version';
-                    let finalFirmware = null;
                     try {
                         const finalFwUrl = `${BASE_API_V1_URL}/firmware_final_versions/${osu.next_se_firmware_final_version}?` +
                             `livecommonversion=${LIVE_COMMON_VERSION}`;
                         const finalFwResp = await fetch(finalFwUrl);
                         if (finalFwResp.ok) {
-                            finalFirmware = await finalFwResp.json();
+                            const finalFirmware = await finalFwResp.json();
                             targetVersion = finalFirmware.version || targetVersion;
                         }
                     } catch (e) {
                         console.log('Could not get target version name:', e);
                     }
                     
-                    // Store context for update
-                    window.firmwareUpdateContext = {
-                        osu: osu,
-                        finalFirmware: finalFirmware,
-                        deviceVersion: deviceVersion,
-                        currentVersion: deviceInfo.version,
-                        targetVersion: targetVersion
-                    };
-                    
                     updateProgress(100, 'Update available!');
                     log(`⚠️ FIRMWARE UPDATE AVAILABLE`, 'warning');
                     log(`Current: ${deviceInfo.version} → Available: ${targetVersion}`, 'warning');
-                    log(`Click "Update Firmware" to start the update process`, 'info');
-                    
-                    // Change button to update mode
-                    btn.textContent = '⬆️ Update Firmware';
-                    btn.classList.remove('secondary');
-                    btn.classList.add('warning');
-                    btn.onclick = updateFirmware;
+                    log(`Use Ledger Live to update your firmware`, 'info');
                     
                 } else {
                     updateProgress(100, 'Firmware is up to date!');
@@ -1117,9 +1630,7 @@
                 updateProgress(0, 'Check failed');
             } finally {
                 btn.disabled = false;
-                if (!window.firmwareUpdateContext) {
-                    btn.textContent = '📦 Check Firmware';
-                }
+                btn.textContent = '📦 Check Firmware';
                 setTimeout(() => showProgress(false), 2000);
             }
         };
@@ -1359,17 +1870,17 @@
                 
                 const modal = document.createElement('div');
                 modal.style.cssText = `
-                    background: #161b22;
-                    border: 1px solid #30363d;
-                    border-radius: 12px;
+                    background: #0a0a0f;
+                    border: 1px solid rgba(167, 139, 250, 0.3);
+                    border-radius: 16px;
                     padding: 30px;
                     text-align: center;
                     max-width: 400px;
                 `;
                 
                 modal.innerHTML = `
-                    <h3 style="color: #c9d1d9; margin: 0 0 15px 0;">🔌 Reconnect Device</h3>
-                    <p id="reconnect-message" style="color: #8b949e; margin: 0 0 20px 0;">
+                    <h3 style="color: #ffffff; margin: 0 0 15px 0;">🔌 Reconnect Device</h3>
+                    <p id="reconnect-message" style="color: #a78bfa; margin: 0 0 20px 0;">
                         ${message}<br>
                         Please unlock your device and click below.
                     </p>
@@ -1618,25 +2129,25 @@
                 
                 const modal = document.createElement('div');
                 modal.style.cssText = `
-                    background: #161b22;
-                    border: 1px solid #30363d;
-                    border-radius: 12px;
+                    background: #0a0a0f;
+                    border: 1px solid rgba(167, 139, 250, 0.3);
+                    border-radius: 16px;
                     padding: 30px;
                     text-align: center;
                     max-width: 400px;
                 `;
                 
                 modal.innerHTML = `
-                    <h3 style="color: #c9d1d9; margin: 0 0 15px 0;">Select Your Device</h3>
-                    <p style="color: #8b949e; margin: 0 0 20px 0;">
+                    <h3 style="color: #ffffff; margin: 0 0 15px 0;">Select Your Device</h3>
+                    <p style="color: #a78bfa; margin: 0 0 20px 0;">
                         Please select your Ledger model:
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button class="device-btn" data-target="0x31100004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Nano S</button>
-                        <button class="device-btn" data-target="0x33000004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Nano X</button>
-                        <button class="device-btn" data-target="0x33100004" style="padding: 12px; background: #238636; border: none; border-radius: 6px; color: white; cursor: pointer;">Nano S Plus</button>
-                        <button class="device-btn" data-target="0x33200004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Stax</button>
-                        <button class="device-btn" data-target="0x33300004" style="padding: 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer;">Flex</button>
+                        <button class="device-btn" data-target="0x31100004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Nano S</button>
+                        <button class="device-btn" data-target="0x33000004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Nano X</button>
+                        <button class="device-btn" data-target="0x33100004" style="padding: 12px; background: #7c3aed; border: none; border-radius: 10px; color: white; cursor: pointer;">Nano S Plus</button>
+                        <button class="device-btn" data-target="0x33200004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Stax</button>
+                        <button class="device-btn" data-target="0x33300004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Flex</button>
                     </div>
                 `;
                 
@@ -1660,17 +2171,31 @@
                 return;
             }
             
+            // Check if firmware update is needed
+            if (window.firmwareUpdateNeeded) {
+                log(`❌ Cannot install apps - firmware update required!`, 'error');
+                log(`Your device: firmware ${deviceInfo.version}`, 'warning');
+                log(`Apps require: firmware ${window.appsFirmwareVersion}`, 'warning');
+                log(`Please click "Check Firmware" to update your device first.`, 'info');
+                return;
+            }
+            
             showProgress(true);
             updateProgress(5, 'Getting app info...');
             
             try {
                 log(`Installing ${appName}...`);
+                log(`Device: ${deviceInfo.model} (Target ID: 0x${deviceInfo.targetId.toString(16)})`);
                 
                 // Find app in catalog
                 const app = availableApps.find(a => a.versionName === appName);
-                if (!app) throw new Error('App not found in catalog');
+                if (!app) {
+                    log(`Available apps: ${availableApps.map(a => a.versionName).join(', ')}`, 'info');
+                    throw new Error('App not found in catalog');
+                }
                 
                 log(`Found ${app.versionName} v${app.version}`);
+                console.log('App info:', app);
                 updateProgress(15, 'Connecting to HSM...');
                 
                 const wsUrl = `${BASE_SOCKET_URL}/install?` +
@@ -1681,6 +2206,9 @@
                     `firmwareKey=${encodeURIComponent(app.firmwareKey)}&` +
                     `hash=${encodeURIComponent(app.hash)}`;
                 
+                console.log('WebSocket URL:', wsUrl);
+                log('Connecting to Ledger HSM...', 'info');
+                
                 await queryViaWebSocket(wsUrl);
                 
                 updateProgress(100, 'Installation complete!');
@@ -1690,6 +2218,7 @@
                 await refreshApps();
                 
             } catch (error) {
+                console.error('Install error:', error);
                 log(`Installation failed: ${error.message}`, 'error');
                 updateProgress(0, 'Installation failed');
             } finally {
@@ -1715,10 +2244,14 @@
         document.getElementById('refreshBtn').addEventListener('click', refreshApps);
         document.getElementById('genuineBtn').addEventListener('click', genuineCheck);
         document.getElementById('firmwareBtn').addEventListener('click', checkFirmware);
-        document.getElementById('recoveryBtn').addEventListener('click', bootloaderRecovery);
         document.getElementById('searchBox').addEventListener('input', renderApps);
         
         log('Ready - Click "Connect Ledger" to start', 'info');
+    </script>
+    <script>
+        function toggleMenu() {
+            document.querySelector('.nav-links').classList.toggle('active');
+        }
     </script>
 </body>
 </html>
