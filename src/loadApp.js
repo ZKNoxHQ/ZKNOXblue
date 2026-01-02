@@ -173,14 +173,15 @@ export async function loadApp(dongle, options) {
     } = options;
 
     // Generate or use provided root private key
+    // Default: use private key = 1 (matches custom CA with public key = generator G)
     let rootPrivateKey;
     if (rootPrivateKeyOption === null) {
-        const privateKey = new PrivateKey();
-        const publicKey = bytesToHex(privateKey.pubkey.serialize(false));
+        // Private key = 1 (32 bytes, big-endian)
+        rootPrivateKey = new Uint8Array(32);
+        rootPrivateKey[31] = 0x01;
         if (debug) {
-            console.log(`Generated random root public key: ${publicKey}`);
+            console.log(`Using default root private key = 1 (custom CA compatible)`);
         }
-        rootPrivateKey = hexToBytes(privateKey.serialize());
     } else {
         rootPrivateKey = typeof rootPrivateKeyOption === 'string' 
             ? hexToBytes(rootPrivateKeyOption) 
@@ -434,10 +435,11 @@ export async function loadApp(dongle, options) {
  */
 export async function deleteApp(dongle, appName, targetId, rootPrivateKey = null, debug = false) {
     // Generate or use provided root private key
+    // Default: use private key = 1 (matches custom CA)
     let rootKey;
     if (rootPrivateKey === null) {
-        const privateKey = new PrivateKey();
-        rootKey = hexToBytes(privateKey.serialize());
+        rootKey = new Uint8Array(32);
+        rootKey[31] = 0x01;
     } else {
         rootKey = typeof rootPrivateKey === 'string' ? hexToBytes(rootPrivateKey) : rootPrivateKey;
     }
@@ -466,10 +468,11 @@ export async function deleteApp(dongle, appName, targetId, rootPrivateKey = null
  */
 export async function listApps(dongle, targetId, rootPrivateKey = null) {
     // Generate or use provided root private key
+    // Default: use private key = 1 (matches custom CA)
     let rootKey;
     if (rootPrivateKey === null) {
-        const privateKey = new PrivateKey();
-        rootKey = hexToBytes(privateKey.serialize());
+        rootKey = new Uint8Array(32);
+        rootKey[31] = 0x01;
     } else {
         rootKey = typeof rootPrivateKey === 'string' ? hexToBytes(rootPrivateKey) : rootPrivateKey;
     }
@@ -493,10 +496,11 @@ export async function listApps(dongle, targetId, rootPrivateKey = null) {
  */
 export async function getMemInfo(dongle, targetId, rootPrivateKey = null) {
     // Generate or use provided root private key
+    // Default: use private key = 1 (matches custom CA)
     let rootKey;
     if (rootPrivateKey === null) {
-        const privateKey = new PrivateKey();
-        rootKey = hexToBytes(privateKey.serialize());
+        rootKey = new Uint8Array(32);
+        rootKey[31] = 0x01;
     } else {
         rootKey = typeof rootPrivateKey === 'string' ? hexToBytes(rootPrivateKey) : rootPrivateKey;
     }

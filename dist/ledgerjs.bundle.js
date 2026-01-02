@@ -25,7 +25,10 @@ function getPossibleErrorCause(sw) {
     26644: "Unexpected target device: verify that you are using the right device?",
     20767: "The OS version on your device does not seem compatible with the SDK version used to build the app",
     20768: "Sideload is not supported on Nano X",
-    25874: "Device locked or not in right state"
+    25873: "Device is not in Recovery Mode - boot while holding button",
+    25874: "Device locked or not in right state",
+    22279: "SCP certificate validation failed - check custom CA installation",
+    26115: "SCP mutual authentication failed - certificate chain rejected"
   };
   return causeMap[sw] || "Unknown reason";
 }
@@ -3643,12 +3646,11 @@ async function loadApp(dongle, options) {
   } = options;
   let rootPrivateKey;
   if (rootPrivateKeyOption === null) {
-    const privateKey = new PrivateKey();
-    const publicKey = bytesToHex3(privateKey.pubkey.serialize(false));
+    rootPrivateKey = new Uint8Array(32);
+    rootPrivateKey[31] = 1;
     if (debug) {
-      console.log(`Generated random root public key: ${publicKey}`);
+      console.log(`Using default root private key = 1 (custom CA compatible)`);
     }
-    rootPrivateKey = hexToBytes3(privateKey.serialize());
   } else {
     rootPrivateKey = typeof rootPrivateKeyOption === "string" ? hexToBytes3(rootPrivateKeyOption) : rootPrivateKeyOption;
   }
@@ -3827,8 +3829,8 @@ async function loadApp(dongle, options) {
 async function deleteApp(dongle, appName, targetId, rootPrivateKey = null, debug = false) {
   let rootKey;
   if (rootPrivateKey === null) {
-    const privateKey = new PrivateKey();
-    rootKey = hexToBytes3(privateKey.serialize());
+    rootKey = new Uint8Array(32);
+    rootKey[31] = 1;
   } else {
     rootKey = typeof rootPrivateKey === "string" ? hexToBytes3(rootPrivateKey) : rootPrivateKey;
   }
@@ -3843,8 +3845,8 @@ async function deleteApp(dongle, appName, targetId, rootPrivateKey = null, debug
 async function listApps(dongle, targetId, rootPrivateKey = null) {
   let rootKey;
   if (rootPrivateKey === null) {
-    const privateKey = new PrivateKey();
-    rootKey = hexToBytes3(privateKey.serialize());
+    rootKey = new Uint8Array(32);
+    rootKey[31] = 1;
   } else {
     rootKey = typeof rootPrivateKey === "string" ? hexToBytes3(rootPrivateKey) : rootPrivateKey;
   }
@@ -3855,8 +3857,8 @@ async function listApps(dongle, targetId, rootPrivateKey = null) {
 async function getMemInfo(dongle, targetId, rootPrivateKey = null) {
   let rootKey;
   if (rootPrivateKey === null) {
-    const privateKey = new PrivateKey();
-    rootKey = hexToBytes3(privateKey.serialize());
+    rootKey = new Uint8Array(32);
+    rootKey[31] = 1;
   } else {
     rootKey = typeof rootPrivateKey === "string" ? hexToBytes3(rootPrivateKey) : rootPrivateKey;
   }

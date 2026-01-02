@@ -36,7 +36,11 @@ export function getPossibleErrorCause(sw) {
         0x6814: "Unexpected target device: verify that you are using the right device?",
         0x511f: "The OS version on your device does not seem compatible with the SDK version used to build the app",
         0x5120: "Sideload is not supported on Nano X",
+        0x6511: "Device is not in Recovery Mode - boot while holding button",
         0x6512: "Device locked or not in right state",
+        0x5707: "SCP certificate validation failed - check custom CA installation",
+        0x6603: "SCP mutual authentication failed - certificate chain rejected",
+        0x5214: "Custom CA setup rejected - device may not be in onboarding state",
     };
 
     return causeMap[sw] || "Unknown reason";
