@@ -49,7 +49,7 @@ zknox-blue/
 
 ## Security
 
-ZKNOX Blue installs **official Ledger applications** only. All apps are verified and signed through ZKNOX's HSM infrastructure, ensuring the same security level as Ledger Live.
+ZKNOX Blue installs **official Ledger applications** only. All apps are verified and signed through Ledger's HSM infrastructure, ensuring the same security level as Ledger Live.
 
 ## Links
 
