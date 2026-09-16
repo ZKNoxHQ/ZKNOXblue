@@ -28,7 +28,8 @@ function getPossibleErrorCause(sw) {
     25873: "Device is not in Recovery Mode - boot while holding button",
     25874: "Device locked or not in right state",
     22279: "SCP certificate validation failed - check custom CA installation",
-    26115: "SCP mutual authentication failed - certificate chain rejected"
+    26115: "SCP mutual authentication failed - certificate chain rejected",
+    21012: "Custom CA setup rejected - device may not be in onboarding state"
   };
   return causeMap[sw] || "Unknown reason";
 }
