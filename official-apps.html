@@ -877,6 +877,7 @@
                 <button id="refreshBtn" class="secondary" disabled>🔄 Refresh</button>
                 <button id="genuineBtn" class="secondary" disabled>✓ Genuine Check</button>
                 <button id="firmwareBtn" class="secondary" disabled>📦 Check Firmware</button>
+                <button id="recoveryBtn" class="secondary" title="Device stuck on 'Bootloader': plug it holding the left button, then click">🛠️ Bootloader Recovery</button>
             </div>
     
             <div class="status-card">
@@ -995,7 +996,7 @@
 
     <script type="module">
         // Import transport from bundle
-        import { TransportWebHID } from './dist/ledgerjs.bundle.js';
+        import { TransportWebHID, FirmwareUpdater } from './dist/ledgerjs.bundle.js';
         
         // App icons mapping
         const APP_ICONS = {
@@ -1182,7 +1183,8 @@
                 
                 document.getElementById('refreshBtn').disabled = false;
                 document.getElementById('genuineBtn').disabled = false;
-                document.getElementById('firmwareBtn').disabled = false;
+                firmwareUpdateContext = null;
+                setFirmwareButton('check');
                 
                 log(`Connected to ${deviceInfo.model} (${deviceInfo.version})`, 'success');
                 
@@ -1540,528 +1542,148 @@
             }
         };
         
+        // ------------------------------------------------------------------
+        // Firmware: check / update / bootloader recovery
+        // All device bytes come from Ledger's HSM (scriptrunner); the page is an
+        // APDU proxy. Logic lives in src/firmwareUpdater.js (port of live-common).
+        // ------------------------------------------------------------------
+        let firmwareUpdateContext = null;
+
+        function makeUpdater() {
+            return new FirmwareUpdater({
+                transport,
+                reconnect: showReconnectModal,
+                onLog: log,
+                onProgress: updateProgress,
+                onEvent: (name) => {
+                    if (name === 'allowSecureChannelRequested') log('Allow the secure channel on your device', 'warning');
+                    if (name === 'devicePermissionRequested') log('Confirm the firmware update on your device', 'warning');
+                },
+                config: { liveCommonVersion: LIVE_COMMON_VERSION, provider: PROVIDER,
+                          apiBase: BASE_API_V1_URL, socketBase: BASE_SOCKET_URL },
+            });
+        }
+
+        function setFirmwareButton(mode) {
+            const btn = document.getElementById('firmwareBtn');
+            btn.disabled = false;
+            if (mode === 'update') {
+                btn.textContent = '⬆️ Update Firmware';
+                btn.classList.remove('secondary');
+                btn.classList.add('warning');
+                btn.onclick = updateFirmware;
+            } else {
+                btn.textContent = '📦 Check Firmware';
+                btn.classList.remove('warning');
+                btn.classList.add('secondary');
+                btn.onclick = checkFirmware;
+            }
+        }
+
         // Firmware check
         window.checkFirmware = async function() {
             const btn = document.getElementById('firmwareBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span>Checking...';
-            
             showProgress(true);
-            updateProgress(10, 'Checking firmware version...');
-            
+            updateProgress(20, 'Querying Ledger servers...');
             try {
-                log('Checking for firmware updates...');
-                
-                // Step 1: Get device version from API
-                updateProgress(30, 'Querying Ledger servers...');
-                const devVerUrl = `${BASE_API_V1_URL}/get_device_version?` +
-                    `livecommonversion=${LIVE_COMMON_VERSION}&` +
-                    `provider=${PROVIDER}&` +
-                    `target_id=${deviceInfo.targetId}`;
-                
-                const devVerResp = await fetch(devVerUrl);
-                if (!devVerResp.ok) throw new Error('Failed to get device version from Ledger API');
-                const deviceVersion = await devVerResp.json();
-                log(`Device: ${deviceVersion.name || deviceVersion.display_name}`);
-                
-                // Step 2: Get current firmware version ID
-                updateProgress(50, 'Getting firmware info...');
-                const firmVerUrl = `${BASE_API_V1_URL}/get_firmware_version?` +
-                    `livecommonversion=${LIVE_COMMON_VERSION}&` +
-                    `device_version=${deviceVersion.id}&` +
-                    `version_name=${deviceInfo.version}&` +
-                    `provider=${PROVIDER}`;
-                
-                const firmVerResp = await fetch(firmVerUrl);
-                if (!firmVerResp.ok) throw new Error('Failed to get firmware version info');
-                const firmwareVersion = await firmVerResp.json();
-                log(`Current firmware ID: ${firmwareVersion.id}`);
-                
-                // Step 3: Check for latest firmware
-                updateProgress(70, 'Checking for updates...');
-                const salt = Date.now().toString(16);
-                const latestUrl = `${BASE_API_V1_URL}/get_latest_firmware?` +
-                    `livecommonversion=${LIVE_COMMON_VERSION}&` +
-                    `salt=${salt}&` +
-                    `current_se_firmware_final_version=${firmwareVersion.id}&` +
-                    `device_version=${deviceVersion.id}&` +
-                    `provider=${PROVIDER}`;
-                
-                const latestResp = await fetch(latestUrl);
-                if (!latestResp.ok) throw new Error('Failed to check for firmware updates');
-                const latestInfo = await latestResp.json();
-                
-                updateProgress(90, 'Processing results...');
-                
-                // Check if update is available
-                if (latestInfo.se_firmware_osu_version && 
-                    latestInfo.se_firmware_osu_version.next_se_firmware_final_version > 0) {
-                    
-                    const osu = latestInfo.se_firmware_osu_version;
-                    
-                    // Get final firmware info
-                    let targetVersion = 'newer version';
-                    try {
-                        const finalFwUrl = `${BASE_API_V1_URL}/firmware_final_versions/${osu.next_se_firmware_final_version}?` +
-                            `livecommonversion=${LIVE_COMMON_VERSION}`;
-                        const finalFwResp = await fetch(finalFwUrl);
-                        if (finalFwResp.ok) {
-                            const finalFirmware = await finalFwResp.json();
-                            targetVersion = finalFirmware.version || targetVersion;
-                        }
-                    } catch (e) {
-                        console.log('Could not get target version name:', e);
-                    }
-                    
-                    updateProgress(100, 'Update available!');
-                    log(`⚠️ FIRMWARE UPDATE AVAILABLE`, 'warning');
-                    log(`Current: ${deviceInfo.version} → Available: ${targetVersion}`, 'warning');
-                    log(`Use Ledger Live to update your firmware`, 'info');
-                    
-                } else {
-                    updateProgress(100, 'Firmware is up to date!');
-                    log(`✓ Firmware is up to date!`, 'success');
-                    log(`Version: ${deviceInfo.version}`, 'success');
+                const updater = makeUpdater();
+                const info = await updater.getDeviceInfo();
+                if (info.isBootloader) {
+                    log('Device is in bootloader mode: use Bootloader Recovery', 'warning');
+                    return;
                 }
-                
+                const ctx = await updater.getLatestFirmware(info);
+                updateProgress(100, ctx ? 'Update available!' : 'Firmware is up to date!');
+                if (!ctx) {
+                    firmwareUpdateContext = null;
+                    log(`✓ Firmware ${info.version} is up to date`, 'success');
+                    return;
+                }
+                firmwareUpdateContext = ctx;
+                log(`⚠️ FIRMWARE UPDATE AVAILABLE: ${ctx.currentVersion} → ${ctx.targetVersion}`, 'warning');
+                log(ctx.shouldFlashMCU
+                    ? `MCU ${info.mcuVersion} must also be flashed (device will pass through bootloader mode)`
+                    : `Secure Element only (MCU ${info.mcuVersion} is compatible)`, 'info');
+                log('Click "Update Firmware" to start. Keep the device plugged in for the whole process.', 'info');
             } catch (error) {
                 console.error('Firmware check error:', error);
                 log(`Firmware check failed: ${error.message}`, 'error');
                 updateProgress(0, 'Check failed');
             } finally {
-                btn.disabled = false;
-                btn.textContent = '📦 Check Firmware';
+                setFirmwareButton(firmwareUpdateContext ? 'update' : 'check');
                 setTimeout(() => showProgress(false), 2000);
             }
         };
-        
+
         // Firmware update
         window.updateFirmware = async function() {
-            if (!window.firmwareUpdateContext) {
-                log('No firmware update available. Please check first.', 'error');
+            if (!firmwareUpdateContext) {
+                log('No firmware update available. Check first.', 'error');
                 return;
             }
-            
-            const ctx = window.firmwareUpdateContext;
+            const ctx = firmwareUpdateContext;
             const btn = document.getElementById('firmwareBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span>Updating...';
-            
+            for (const id of ['connectBtn', 'refreshBtn', 'genuineBtn']) document.getElementById(id).disabled = true;
             showProgress(true);
-            
             try {
-                log(`Starting firmware update: ${ctx.currentVersion} → ${ctx.targetVersion}`, 'warning');
-                log('⚠️ DO NOT disconnect your device during the update!', 'warning');
-                
-                // Step 1: Install OSU (Operating System Updater)
-                updateProgress(5, 'Installing OSU...');
-                log('Installing OSU (Operating System Updater)...');
-                
-                const osuUrl = `${BASE_SOCKET_URL}/install?` +
-                    `targetId=${deviceInfo.targetId}&` +
-                    `firmware=${encodeURIComponent(ctx.osu.firmware)}&` +
-                    `firmwareKey=${encodeURIComponent(ctx.osu.firmware_key)}&` +
-                    `perso=${encodeURIComponent(ctx.osu.perso)}`;
-                
-                await queryViaWebSocketWithProgress(osuUrl, (progress) => {
-                    updateProgress(5 + progress * 30, `Installing OSU: ${Math.round(progress * 100)}%`);
-                });
-                
-                log('OSU installed. Device will reboot...', 'success');
-                updateProgress(35, 'Waiting for device to reboot...');
-                
-                // Wait for device to reboot and reconnect
-                log('Waiting for device to reboot into bootloader mode...');
-                await waitForDeviceReboot(15000);
-                
-                // Step 2: Flash MCU (may need multiple iterations)
-                updateProgress(40, 'Flashing MCU...');
-                log('Flashing MCU (Microcontroller Unit)...');
-                
-                let mcuIterations = 0;
-                const maxIterations = 5;
-                
-                while (mcuIterations < maxIterations) {
-                    mcuIterations++;
-                    log(`MCU flash attempt ${mcuIterations}/${maxIterations}...`);
-                    
-                    // Get current device info (may be in bootloader mode now)
-                    const bootloaderInfo = await getDeviceInfoRaw();
-                    
-                    // Determine MCU version to flash
-                    // For simplicity, we'll use the MCU associated with the final firmware
-                    const mcuVersion = bootloaderInfo.version; // Current bootloader version
-                    
-                    const mcuUrl = `${BASE_SOCKET_URL}/mcu?` +
-                        `targetId=${bootloaderInfo.targetId}&` +
-                        `version=${encodeURIComponent(mcuVersion)}`;
-                    
-                    try {
-                        await queryViaWebSocketWithProgress(mcuUrl, (progress) => {
-                            updateProgress(40 + progress * 25, `Flashing MCU: ${Math.round(progress * 100)}%`);
-                        });
-                        log('MCU flash complete', 'success');
-                        break;
-                    } catch (e) {
-                        if (e.message.includes('closed') && mcuIterations < maxIterations) {
-                            log('Device rebooted, reconnecting...', 'info');
-                            await waitForDeviceReboot(10000);
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
-                
-                // Step 3: Install final firmware
-                updateProgress(70, 'Installing final firmware...');
-                log('Installing final firmware...');
-                
-                // Reconnect to get new device info
-                await waitForDeviceReboot(5000);
-                const finalDeviceInfo = await getDeviceInfoRaw();
-                
-                if (ctx.finalFirmware) {
-                    const finalUrl = `${BASE_SOCKET_URL}/install?` +
-                        `targetId=${finalDeviceInfo.targetId}&` +
-                        `firmware=${encodeURIComponent(ctx.finalFirmware.firmware)}&` +
-                        `firmwareKey=${encodeURIComponent(ctx.finalFirmware.firmware_key)}&` +
-                        `perso=${encodeURIComponent(ctx.finalFirmware.perso)}`;
-                    
-                    await queryViaWebSocketWithProgress(finalUrl, (progress) => {
-                        updateProgress(70 + progress * 25, `Installing firmware: ${Math.round(progress * 100)}%`);
-                    });
-                }
-                
-                updateProgress(100, 'Firmware update complete!');
-                log(`✓ Firmware updated to ${ctx.targetVersion}!`, 'success');
-                log('Please unlock your device to continue.', 'info');
-                
-                // Clear update context
-                window.firmwareUpdateContext = null;
-                
-                // Reset button
-                btn.textContent = '📦 Check Firmware';
-                btn.classList.remove('warning');
-                btn.classList.add('secondary');
-                btn.onclick = checkFirmware;
-                
+                log('⚠️ DO NOT unplug your device during the update, even when the screen goes blank.', 'warning');
+                const updater = makeUpdater();
+                const info = await updater.update(ctx);
+                transport = updater.transport;
+                deviceInfo = parseVersionInfo(await exchange(0xE0, 0x01, 0x00, 0x00));
+                document.getElementById('deviceFirmware').textContent = deviceInfo.version;
+                document.getElementById('deviceMcu').textContent = deviceInfo.mcuVersion || '-';
+                firmwareUpdateContext = null;
+                log(`✓ Device now on firmware ${info.version}`, 'success');
+                await refreshApps();
             } catch (error) {
                 console.error('Firmware update error:', error);
                 log(`Firmware update failed: ${error.message}`, 'error');
-                log('Your device may need to be restored using Ledger Live.', 'warning');
+                log('If the device shows "Bootloader", unplug it, plug it back holding the left button and use Bootloader Recovery.', 'warning');
                 updateProgress(0, 'Update failed');
             } finally {
-                btn.disabled = false;
+                for (const id of ['connectBtn', 'refreshBtn', 'genuineBtn']) document.getElementById(id).disabled = false;
+                setFirmwareButton(firmwareUpdateContext ? 'update' : 'check');
                 setTimeout(() => showProgress(false), 3000);
             }
         };
-        
-        // WebSocket with progress tracking
-        async function queryViaWebSocketWithProgress(url, onProgress) {
-            return new Promise((resolve, reject) => {
-                const ws = new WebSocket(url);
-                let bulkTotal = 0;
-                let bulkCount = 0;
-                
-                ws.onopen = () => log('Connected to HSM');
-                
-                ws.onmessage = async (event) => {
-                    try {
-                        const msg = JSON.parse(event.data);
-                        
-                        if (msg.query === 'exchange') {
-                            const cmdBytes = hexToBytes(msg.data);
-                            try {
-                                const response = await transport.exchange(cmdBytes);
-                                ws.send(JSON.stringify({
-                                    nonce: msg.nonce,
-                                    response: 'success',
-                                    data: bytesToHex(response)
-                                }));
-                            } catch (e) {
-                                ws.send(JSON.stringify({
-                                    nonce: msg.nonce,
-                                    response: 'error',
-                                    data: ''
-                                }));
-                            }
-                            
-                        } else if (msg.query === 'bulk') {
-                            const commands = msg.data || [];
-                            bulkTotal = commands.length;
-                            bulkCount = 0;
-                            
-                            for (const cmdHex of commands) {
-                                if (!cmdHex) continue;
-                                await transport.exchange(hexToBytes(cmdHex));
-                                bulkCount++;
-                                if (onProgress) {
-                                    onProgress(bulkCount / bulkTotal);
-                                }
-                            }
-                            
-                            ws.send(JSON.stringify({
-                                nonce: msg.nonce,
-                                response: 'success',
-                                data: ''
-                            }));
-                            
-                        } else if (msg.query === 'success') {
-                            ws.close();
-                            resolve();
-                        } else if (msg.query === 'error') {
-                            ws.close();
-                            reject(new Error(`HSM error: ${event.data}`));
-                        } else if (msg.query === 'warning') {
-                            log(`HSM warning: ${msg.data || event.data}`, 'warning');
-                        }
-                    } catch (error) {
-                        ws.close();
-                        reject(error);
-                    }
-                };
-                
-                ws.onerror = () => reject(new Error('WebSocket connection failed'));
-                ws.onclose = (e) => {
-                    if (!e.wasClean && e.code !== 1000) {
-                        reject(new Error(`Connection closed: ${e.code}`));
-                    }
-                };
-            });
-        }
-        
-        // Wait for device to reboot and reconnect
-        async function waitForDeviceReboot(message = 'Your Ledger has rebooted.') {
-            // Close existing transport
-            if (transport) {
-                try {
-                    await transport.close();
-                } catch (e) {}
-                transport = null;
-            }
-            
-            // Wait a bit for device to start rebooting
-            await new Promise(r => setTimeout(r, 2000));
-            
-            // Show reconnect modal - always need user gesture for WebHID
-            log('Waiting for device reconnection...', 'info');
-            transport = await showReconnectModal(message);
-            log('Device reconnected', 'success');
-        }
-        
-        // Show a modal/button for user to reconnect device
-        function showReconnectModal(message) {
-            return new Promise((resolve, reject) => {
-                // Create overlay
-                const overlay = document.createElement('div');
-                overlay.id = 'reconnect-overlay';
-                overlay.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0,0,0,0.8);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 9999;
-                `;
-                
-                const modal = document.createElement('div');
-                modal.style.cssText = `
-                    background: #0a0a0f;
-                    border: 1px solid rgba(167, 139, 250, 0.3);
-                    border-radius: 16px;
-                    padding: 30px;
-                    text-align: center;
-                    max-width: 400px;
-                `;
-                
-                modal.innerHTML = `
-                    <h3 style="color: #ffffff; margin: 0 0 15px 0;">🔌 Reconnect Device</h3>
-                    <p id="reconnect-message" style="color: #a78bfa; margin: 0 0 20px 0;">
-                        ${message}<br>
-                        Please unlock your device and click below.
-                    </p>
-                    <button id="reconnect-btn" style="
-                        background: #238636;
-                        color: white;
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: 6px;
-                        font-size: 16px;
-                        cursor: pointer;
-                    ">🔌 Reconnect Ledger</button>
-                `;
-                
-                overlay.appendChild(modal);
-                document.body.appendChild(overlay);
-                
-                const btn = document.getElementById('reconnect-btn');
-                btn.onclick = async () => {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="loading"></span> Connecting...';
-                    
-                    try {
-                        const t = await TransportWebHID.request(true);
-                        document.body.removeChild(overlay);
-                        resolve(t);
-                    } catch (e) {
-                        btn.disabled = false;
-                        btn.textContent = '🔌 Reconnect Ledger';
-                        document.getElementById('reconnect-message').innerHTML = `
-                            <span style="color: #f85149;">Connection failed: ${e.message}</span><br>
-                            Please try again.
-                        `;
-                    }
-                };
-            });
-        }
-        
-        // Get raw device info
-        async function getDeviceInfoRaw() {
-            const response = await exchange(0xE0, 0x01, 0x00, 0x00);
-            return parseVersionInfo(response);
-        }
-        
-        // Bootloader recovery
+
+        // Bootloader recovery (device plugged while holding the left button)
         window.bootloaderRecovery = async function() {
             const btn = document.getElementById('recoveryBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span>Recovering...';
-            
             showProgress(true);
             updateProgress(5, 'Connecting to device in bootloader mode...');
-            
             try {
-                log('🛠️ Starting bootloader recovery...', 'warning');
-                log('Connecting to device...', 'info');
-                
-                // Connect to device (may already be connected)
-                if (!transport) {
+                log('🛠️ Bootloader recovery: flashing bootloader/MCU matching the firmware on the Secure Element', 'warning');
+                // The bootloader enumerates with another product id: a transport opened on the
+                // dashboard is stale. Probe it, and re-pair on any failure.
+                let probeOk = false;
+                if (transport && transport.opened) {
+                    try { await exchange(0xE0, 0x01, 0x00, 0x00); probeOk = true; } catch (e) { probeOk = false; }
+                }
+                if (!probeOk) {
+                    if (transport) { try { await transport.close(); } catch (e) {} }
                     transport = await TransportWebHID.request(true);
                 }
-                
-                // Get device info - in bootloader mode this returns bootloader version
-                updateProgress(10, 'Getting bootloader info...');
-                const response = await exchange(0xE0, 0x01, 0x00, 0x00);
-                const bootInfo = parseBootloaderInfo(response);
-                
-                log(`Target ID: 0x${bootInfo.targetId.toString(16)}`, 'info');
-                log(`Bootloader version: ${bootInfo.version}`, 'info');
-                if (bootInfo.seTargetId) {
-                    log(`SE Target ID: 0x${bootInfo.seTargetId.toString(16)}`, 'info');
-                }
-                
-                const knownSeTargets = {
-                    0x31100004: 'Nano S',
-                    0x33000004: 'Nano X', 
-                    0x33100004: 'Nano S Plus',
-                    0x33200004: 'Stax',
-                    0x33300004: 'Flex'
-                };
-                
-                // Check if already in normal mode
-                if (knownSeTargets[bootInfo.targetId]) {
-                    log('Device is already in normal mode!', 'success');
-                    updateProgress(100, 'Device is ready!');
-                    return;
-                }
-                
-                // Use SE target ID from bootloader response if available
-                let seTargetId = bootInfo.seTargetId;
-                let deviceName = seTargetId ? knownSeTargets[seTargetId] : null;
-                
-                if (!deviceName) {
-                    // Ask user to select device
-                    log('Could not detect device type, please select...', 'warning');
-                    seTargetId = await selectDeviceType();
-                    deviceName = knownSeTargets[seTargetId];
-                }
-                
-                log(`Device: ${deviceName}`, 'info');
-                
-                // Get bootloader version for MCU flashing
-                const blVersion = bootInfo.version.split('-')[0];
-                
-                // Query API for MCU version to flash
-                updateProgress(20, 'Querying Ledger API...');
-                let targetMcuVersion = blVersion;
-                
-                try {
-                    const devVerUrl = `${BASE_API_V1_URL}/get_device_version?` +
-                        `livecommonversion=${LIVE_COMMON_VERSION}&` +
-                        `provider=${PROVIDER}&` +
-                        `target_id=${seTargetId}`;
-                    
-                    const devVerResp = await fetch(devVerUrl);
-                    if (devVerResp.ok) {
-                        const deviceVersion = await devVerResp.json();
-                        log(`API Device: ${deviceVersion.name}`, 'info');
-                        
-                        // Get MCU versions
-                        const mcuUrl = `${BASE_API_V1_URL}/mcu_versions?livecommonversion=${LIVE_COMMON_VERSION}`;
-                        const mcuResp = await fetch(mcuUrl);
-                        if (mcuResp.ok) {
-                            const allMcus = await mcuResp.json();
-                            const deviceMcus = allMcus.filter(mcu => 
-                                mcu.device_versions && mcu.device_versions.includes(deviceVersion.id)
-                            );
-                            
-                            // Find best MCU
-                            const blMajMin = blVersion.split('.').slice(0, 2).join('.');
-                            for (const mcu of deviceMcus) {
-                                const fromBl = mcu.from_bootloader_version;
-                                if (fromBl && fromBl !== 'none') {
-                                    const fromBlMajMin = fromBl.split('.').slice(0, 2).join('.');
-                                    if (fromBlMajMin === blMajMin) {
-                                        targetMcuVersion = mcu.name;
-                                        log(`Using MCU: ${mcu.name}`, 'success');
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {
-                    log(`API query failed, using version ${targetMcuVersion}`, 'warning');
-                }
-                
-                // Flash MCU
-                updateProgress(30, `Flashing MCU ${targetMcuVersion}...`);
-                log(`Flashing MCU version: ${targetMcuVersion}`, 'warning');
-                log('⚠️ DO NOT disconnect your device!', 'warning');
-                
-                const mcuWsUrl = `${BASE_SOCKET_URL}/mcu?` +
-                    `targetId=${bootInfo.targetId}&` +
-                    `version=${encodeURIComponent(targetMcuVersion)}`;
-                
-                try {
-                    await queryViaWebSocketWithProgress(mcuWsUrl, (progress) => {
-                        updateProgress(30 + progress * 60, `Flashing MCU: ${Math.round(progress * 100)}%`);
-                    });
-                    log('MCU flash command completed!', 'success');
-                } catch (e) {
-                    // Connection loss is expected - device reboots
-                    if (e.message.includes('closed') || e.message.includes('WebSocket')) {
-                        log('Device is rebooting (expected)...', 'info');
-                    } else {
-                        throw e;
-                    }
-                }
-                
-                updateProgress(95, 'Waiting for device to restart...');
-                log('MCU flash sent. Device should restart...', 'info');
-                log('', 'info');
-                log('📋 NEXT STEPS:', 'warning');
-                log('1. Wait for your device to restart', 'info');
-                log('2. If it shows "Bootloader" again, click Recovery again', 'info');
-                log('3. If it shows PIN entry, your device is recovered!', 'success');
-                log('4. If recovery keeps looping, you may need Ledger Live', 'warning');
-                
-                updateProgress(100, 'MCU flash sent!');
-                
+                log(`GET_VERSION: ${bytesToHex(await exchange(0xE0, 0x01, 0x00, 0x00))}`, 'info');
+                const updater = makeUpdater();
+                const info = await updater.repair();
+                transport = updater.transport;
+                deviceInfo = parseVersionInfo(await exchange(0xE0, 0x01, 0x00, 0x00));
+                document.getElementById('statusDot').classList.add('connected');
+                document.getElementById('connectionText').textContent = 'Connected';
+                document.getElementById('deviceModel').textContent = deviceInfo.model;
+                document.getElementById('deviceFirmware').textContent = deviceInfo.version;
+                document.getElementById('deviceMcu').textContent = deviceInfo.mcuVersion || '-';
+                document.getElementById('deviceTarget').textContent = '0x' + deviceInfo.targetId.toString(16);
+                for (const id of ['refreshBtn', 'genuineBtn', 'firmwareBtn']) document.getElementById(id).disabled = false;
+                log(`✓ Device recovered: ${info.version}`, 'success');
             } catch (error) {
                 console.error('Recovery error:', error);
                 log(`Recovery failed: ${error.message}`, 'error');
@@ -2072,98 +1694,49 @@
                 setTimeout(() => showProgress(false), 5000);
             }
         };
-        
-        // Parse bootloader mode response (different format than normal mode)
-        function parseBootloaderInfo(data) {
-            // Bootloader response format:
-            // [target_id: 4] [version_len: 1] [version: N] [flags: 4] [mcu_len: 1] [mcu: N] [se_target: 4]
-            let offset = 0;
-            
-            const targetId = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
-            offset += 4;
-            
-            const versionLen = data[offset++];
-            const version = new TextDecoder().decode(data.slice(offset, offset + versionLen));
-            offset += versionLen;
-            
-            // Skip flags (4 bytes)
-            offset += 4;
-            
-            let mcuVersion = '';
-            let seTargetId = null;
-            
-            if (offset < data.length) {
-                const mcuLen = data[offset++];
-                if (mcuLen > 0 && offset + mcuLen <= data.length) {
-                    mcuVersion = new TextDecoder().decode(data.slice(offset, offset + mcuLen));
-                    offset += mcuLen;
-                }
-                
-                // SE target ID at end (4 bytes)
-                if (offset + 4 <= data.length) {
-                    seTargetId = (data[offset] << 24) | (data[offset+1] << 16) | (data[offset+2] << 8) | data[offset+3];
-                }
-            }
-            
-            return {
-                targetId,
-                version,
-                mcuVersion,
-                seTargetId
-            };
-        }
-        
-        // Device type selector for unknown bootloaders
-        function selectDeviceType() {
+
+        // Reconnect modal: WebHID needs a user gesture to pair the re-enumerated device
+        // (after a reboot the bootloader / OSU shows up with another product id).
+        function showReconnectModal(message) {
             return new Promise((resolve) => {
                 const overlay = document.createElement('div');
+                overlay.id = 'reconnect-overlay';
                 overlay.style.cssText = `
-                    position: fixed;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.8);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 9999;
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.8); display: flex;
+                    align-items: center; justify-content: center; z-index: 9999;
                 `;
-                
                 const modal = document.createElement('div');
                 modal.style.cssText = `
-                    background: #0a0a0f;
-                    border: 1px solid rgba(167, 139, 250, 0.3);
-                    border-radius: 16px;
-                    padding: 30px;
-                    text-align: center;
-                    max-width: 400px;
+                    background: #0a0a0f; border: 1px solid rgba(167, 139, 250, 0.3);
+                    border-radius: 16px; padding: 30px; text-align: center; max-width: 420px;
                 `;
-                
                 modal.innerHTML = `
-                    <h3 style="color: #ffffff; margin: 0 0 15px 0;">Select Your Device</h3>
-                    <p style="color: #a78bfa; margin: 0 0 20px 0;">
-                        Please select your Ledger model:
-                    </p>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button class="device-btn" data-target="0x31100004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Nano S</button>
-                        <button class="device-btn" data-target="0x33000004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Nano X</button>
-                        <button class="device-btn" data-target="0x33100004" style="padding: 12px; background: #7c3aed; border: none; border-radius: 10px; color: white; cursor: pointer;">Nano S Plus</button>
-                        <button class="device-btn" data-target="0x33200004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Stax</button>
-                        <button class="device-btn" data-target="0x33300004" style="padding: 12px; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; color: #ffffff; cursor: pointer;">Flex</button>
-                    </div>
+                    <h3 style="color: #ffffff; margin: 0 0 15px 0;">🔌 Reconnect Device</h3>
+                    <p id="reconnect-message" style="color: #a78bfa; margin: 0 0 20px 0;">${message}</p>
+                    <button id="reconnect-btn" style="background: #238636; color: white; border: none;
+                        padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer;">🔌 Reconnect Ledger</button>
                 `;
-                
                 overlay.appendChild(modal);
                 document.body.appendChild(overlay);
-                
-                modal.querySelectorAll('.device-btn').forEach(btn => {
-                    btn.onclick = () => {
-                        const target = parseInt(btn.dataset.target, 16);
+                const btn = document.getElementById('reconnect-btn');
+                btn.onclick = async () => {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="loading"></span> Connecting...';
+                    try {
+                        const t = await TransportWebHID.request(true);
                         document.body.removeChild(overlay);
-                        resolve(target);
-                    };
-                });
+                        resolve(t);
+                    } catch (e) {
+                        btn.disabled = false;
+                        btn.textContent = '🔌 Reconnect Ledger';
+                        document.getElementById('reconnect-message').innerHTML =
+                            `<span style="color: #f85149;">Connection failed: ${e.message}</span><br>${message}`;
+                    }
+                };
             });
         }
-        
+
         // Install app
         window.installApp = async function(appName) {
             if (!transport || !deviceInfo) {
@@ -2243,7 +1816,8 @@
         document.getElementById('connectBtn').addEventListener('click', connectDevice);
         document.getElementById('refreshBtn').addEventListener('click', refreshApps);
         document.getElementById('genuineBtn').addEventListener('click', genuineCheck);
-        document.getElementById('firmwareBtn').addEventListener('click', checkFirmware);
+        document.getElementById('firmwareBtn').onclick = checkFirmware;
+        document.getElementById('recoveryBtn').addEventListener('click', bootloaderRecovery);
         document.getElementById('searchBox').addEventListener('input', renderApps);
         
         log('Ready - Click "Connect Ledger" to start', 'info');

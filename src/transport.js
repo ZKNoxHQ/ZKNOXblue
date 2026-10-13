@@ -24,6 +24,8 @@ export class TransportWebHID {
         this.opened = false;
         this._inputReportPromise = null;
         this._inputReportResolve = null;
+        this._inputReportReject = null;
+        this._onDisconnect = null;
     }
 
     /**
@@ -43,12 +45,28 @@ export class TransportWebHID {
                 this._inputReportResolve = null;
             }
         });
+
+        // Device unplugged / rebooted: fail the pending exchange immediately instead of timing out
+        if (navigator.hid && !this._onDisconnect) {
+            this._onDisconnect = (event) => {
+                if (event.device !== this.device) return;
+                this.opened = false;
+                if (this._inputReportReject) {
+                    this._inputReportReject(new CommException('Device disconnected'));
+                }
+            };
+            navigator.hid.addEventListener('disconnect', this._onDisconnect);
+        }
     }
 
     /**
      * Close connection to device
      */
     async close() {
+        if (navigator.hid && this._onDisconnect) {
+            navigator.hid.removeEventListener('disconnect', this._onDisconnect);
+            this._onDisconnect = null;
+        }
         if (this.opened && this.device.opened) {
             await this.device.close();
         }
@@ -64,12 +82,20 @@ export class TransportWebHID {
         return new Promise((resolve, reject) => {
             const timeoutId = setTimeout(() => {
                 this._inputReportResolve = null;
+                this._inputReportReject = null;
                 reject(new CommException('Timeout waiting for device response'));
             }, timeout);
 
             this._inputReportResolve = (data) => {
                 clearTimeout(timeoutId);
+                this._inputReportReject = null;
                 resolve(data);
+            };
+            this._inputReportReject = (err) => {
+                clearTimeout(timeoutId);
+                this._inputReportResolve = null;
+                this._inputReportReject = null;
+                reject(err);
             };
         });
     }
@@ -96,7 +122,12 @@ export class TransportWebHID {
         for (let offset = 0; offset < wrapped.length; offset += HID_PACKET_SIZE) {
             const packet = wrapped.slice(offset, offset + HID_PACKET_SIZE);
             // WebHID sendReport requires report ID as first parameter
-            await this.device.sendReport(0x00, packet);
+            try {
+                await this.device.sendReport(0x00, packet);
+            } catch (e) {
+                this.opened = false;
+                throw new CommException(`Device disconnected (failed to write: ${e.message})`);
+            }
         }
 
         // Receive response packets

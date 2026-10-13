@@ -18,7 +18,8 @@ ZKNOX Blue provides a web-based interface for installing official Ledger applica
 - 📱 **WebHID Support** - Works directly in Chrome/Edge browsers
 - 🔐 **HSM-Backed Security** - Apps are signed using ZKNOX's secure infrastructure
 - ⚡ **Fast Installation** - Streamlined installation process
-- 🔍 **Firmware Check** - Verify your device firmware version
+- 🔍 **Firmware Check / Update** - Check and install firmware updates through Ledger's HSM, without Ledger Live
+- 🛠️ **Bootloader Recovery** - Repair a device stuck on "Bootloader" (plug it holding the left button)
 
 ## Usage
 
@@ -27,6 +28,14 @@ ZKNOX Blue provides a web-based interface for installing official Ledger applica
 3. Select your Ledger device
 4. Choose an application to install
 5. Confirm on your device
+
+### Firmware update
+
+1. **Check Firmware**: the page asks Ledger's manager API for the next firmware and whether the MCU must be flashed.
+2. **Update Firmware**: OSU install (confirm on the device), reboot, optional bootloader/MCU flashes, final firmware. The device re-enumerates after each reboot; when the page cannot re-open it silently it asks you to click **Reconnect Ledger** (WebHID needs a user gesture). Never unplug the device during a flash.
+3. If the device ends up on "Bootloader": unplug it, plug it back while holding the left button, then **Bootloader Recovery**.
+
+Same endpoints and same sequence as Ledger Live (`@ledgerhq/live-common` `updateFirmwareTask` / `firmwareUpdate-repair`), see `src/firmwareUpdater.js`.
 
 ## Requirements
 

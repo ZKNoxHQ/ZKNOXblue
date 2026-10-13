@@ -1,6 +1,6 @@
 {
   "name": "zknox-blue",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "ZKNOX Blue - Official Ledger app installer (WebHID)",
   "type": "module",
   "private": true,
