@@ -15,3 +15,11 @@
 **Décision.** Porter la logique de `@ledgerhq/live-common` (34.51) telle quelle, sans dépendance npm (rxjs, Buffer, semver remplacés par ~500 lignes), dans `src/firmwareUpdater.js`. Le HSM reste la seule source des blobs : la page ne fait que relayer les APDU. Choix de MCU calqué sur `retrieveMcuVersion`/`getFlashMcuOrBootloaderDetails` (filtre provider + `from_bootloader_version !== 'none'` + `final.mcu_versions`, meilleur par semver ; bootloader flashé d'abord s'il ne correspond pas). Reconnexion : polling silencieux de `navigator.hid.getDevices()` puis modale avec geste utilisateur (le bootloader/OSU change de productId, WebHID exige un nouveau `requestDevice`). La réparation suit `firmwareUpdate-repair` (branche `seVersion`/`seTargetId`), avec la version de bootloader tronquée à 3 composantes comme dans le flux de mise à jour.
 
 **Conséquence.** Le code est testé en boucle fermée (faux scriptrunner ws + `TransportMock`) mais pas encore sur matériel : premier essai à faire sur un Nano S+ sacrifiable, avec `DEBUG` de `ledger-live deviceSDKFirmwareUpdate` comme référence si l'HSM répond `error`. Toute divergence de protocole se corrige dans `firmwareUpdater.js`, jamais dans la page.
+
+## ADR-003 — Une seule page, la logique dans le bundle (2026-10-14)
+
+**Contexte.** `official-apps.html` existait en deux versions divergentes : celle de ce dépôt (autonome) et celle du site zknox.com (re-stylée avec `styles.css`/`nav.js`). La mise à jour de firmware (ADR-002) n'était que dans la première ; chaque évolution devait être reportée à la main.
+
+**Décision.** Le dépôt moteur fournit tout le comportement via le bundle (`FirmwareUpdater` pour la logique, `FirmwareUi` pour la glu DOM), paramétré par des callbacks et des ids de boutons. Les pages ne gardent que le HTML, le style et le branchement. Le site consomme ce dépôt en submodule `zknox-blue/` et sa page diffère uniquement par le chemin du bundle. Même règle à appliquer à ZKNOXorange / `sideloader.html`.
+
+**Conséquence.** Toute logique ajoutée dans une page est un défaut : elle va dans `src/` et est exportée. Le diff entre les scripts des deux pages doit rester limité à la ligne d'import.

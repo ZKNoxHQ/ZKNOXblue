@@ -996,7 +996,7 @@
 
     <script type="module">
         // Import transport from bundle
-        import { TransportWebHID, FirmwareUpdater } from './dist/ledgerjs.bundle.js';
+        import { TransportWebHID, FirmwareUi } from './dist/ledgerjs.bundle.js';
         
         // App icons mapping
         const APP_ICONS = {
@@ -1183,8 +1183,7 @@
                 
                 document.getElementById('refreshBtn').disabled = false;
                 document.getElementById('genuineBtn').disabled = false;
-                firmwareUpdateContext = null;
-                setFirmwareButton('check');
+                firmwareUi.reset();
                 
                 log(`Connected to ${deviceInfo.model} (${deviceInfo.version})`, 'success');
                 
@@ -1542,140 +1541,14 @@
             }
         };
         
-        // ------------------------------------------------------------------
-        // Firmware: check / update / bootloader recovery
-        // All device bytes come from Ledger's HSM (scriptrunner); the page is an
-        // APDU proxy. Logic lives in src/firmwareUpdater.js (port of live-common).
-        // ------------------------------------------------------------------
-        let firmwareUpdateContext = null;
-
-        function makeUpdater() {
-            return new FirmwareUpdater({
-                transport,
-                reconnect: showReconnectModal,
-                onLog: log,
-                onProgress: updateProgress,
-                onEvent: (name) => {
-                    if (name === 'allowSecureChannelRequested') log('Allow the secure channel on your device', 'warning');
-                    if (name === 'devicePermissionRequested') log('Confirm the firmware update on your device', 'warning');
-                },
-                config: { liveCommonVersion: LIVE_COMMON_VERSION, provider: PROVIDER,
-                          apiBase: BASE_API_V1_URL, socketBase: BASE_SOCKET_URL },
-            });
-        }
-
-        function setFirmwareButton(mode) {
-            const btn = document.getElementById('firmwareBtn');
-            btn.disabled = false;
-            if (mode === 'update') {
-                btn.textContent = '⬆️ Update Firmware';
-                btn.classList.remove('secondary');
-                btn.classList.add('warning');
-                btn.onclick = updateFirmware;
-            } else {
-                btn.textContent = '📦 Check Firmware';
-                btn.classList.remove('warning');
-                btn.classList.add('secondary');
-                btn.onclick = checkFirmware;
-            }
-        }
-
-        // Firmware check
-        window.checkFirmware = async function() {
-            const btn = document.getElementById('firmwareBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>Checking...';
-            showProgress(true);
-            updateProgress(20, 'Querying Ledger servers...');
-            try {
-                const updater = makeUpdater();
-                const info = await updater.getDeviceInfo();
-                if (info.isBootloader) {
-                    log('Device is in bootloader mode: use Bootloader Recovery', 'warning');
-                    return;
-                }
-                const ctx = await updater.getLatestFirmware(info);
-                updateProgress(100, ctx ? 'Update available!' : 'Firmware is up to date!');
-                if (!ctx) {
-                    firmwareUpdateContext = null;
-                    log(`✓ Firmware ${info.version} is up to date`, 'success');
-                    return;
-                }
-                firmwareUpdateContext = ctx;
-                log(`⚠️ FIRMWARE UPDATE AVAILABLE: ${ctx.currentVersion} → ${ctx.targetVersion}`, 'warning');
-                log(ctx.shouldFlashMCU
-                    ? `MCU ${info.mcuVersion} must also be flashed (device will pass through bootloader mode)`
-                    : `Secure Element only (MCU ${info.mcuVersion} is compatible)`, 'info');
-                log('Click "Update Firmware" to start. Keep the device plugged in for the whole process.', 'info');
-            } catch (error) {
-                console.error('Firmware check error:', error);
-                log(`Firmware check failed: ${error.message}`, 'error');
-                updateProgress(0, 'Check failed');
-            } finally {
-                setFirmwareButton(firmwareUpdateContext ? 'update' : 'check');
-                setTimeout(() => showProgress(false), 2000);
-            }
-        };
-
-        // Firmware update
-        window.updateFirmware = async function() {
-            if (!firmwareUpdateContext) {
-                log('No firmware update available. Check first.', 'error');
-                return;
-            }
-            const ctx = firmwareUpdateContext;
-            const btn = document.getElementById('firmwareBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>Updating...';
-            for (const id of ['connectBtn', 'refreshBtn', 'genuineBtn']) document.getElementById(id).disabled = true;
-            showProgress(true);
-            try {
-                log('⚠️ DO NOT unplug your device during the update, even when the screen goes blank.', 'warning');
-                const updater = makeUpdater();
-                const info = await updater.update(ctx);
-                transport = updater.transport;
-                deviceInfo = parseVersionInfo(await exchange(0xE0, 0x01, 0x00, 0x00));
-                document.getElementById('deviceFirmware').textContent = deviceInfo.version;
-                document.getElementById('deviceMcu').textContent = deviceInfo.mcuVersion || '-';
-                firmwareUpdateContext = null;
-                log(`✓ Device now on firmware ${info.version}`, 'success');
-                await refreshApps();
-            } catch (error) {
-                console.error('Firmware update error:', error);
-                log(`Firmware update failed: ${error.message}`, 'error');
-                log('If the device shows "Bootloader", unplug it, plug it back holding the left button and use Bootloader Recovery.', 'warning');
-                updateProgress(0, 'Update failed');
-            } finally {
-                for (const id of ['connectBtn', 'refreshBtn', 'genuineBtn']) document.getElementById(id).disabled = false;
-                setFirmwareButton(firmwareUpdateContext ? 'update' : 'check');
-                setTimeout(() => showProgress(false), 3000);
-            }
-        };
-
-        // Bootloader recovery (device plugged while holding the left button)
-        window.bootloaderRecovery = async function() {
-            const btn = document.getElementById('recoveryBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>Recovering...';
-            showProgress(true);
-            updateProgress(5, 'Connecting to device in bootloader mode...');
-            try {
-                log('🛠️ Bootloader recovery: flashing bootloader/MCU matching the firmware on the Secure Element', 'warning');
-                // The bootloader enumerates with another product id: a transport opened on the
-                // dashboard is stale. Probe it, and re-pair on any failure.
-                let probeOk = false;
-                if (transport && transport.opened) {
-                    try { await exchange(0xE0, 0x01, 0x00, 0x00); probeOk = true; } catch (e) { probeOk = false; }
-                }
-                if (!probeOk) {
-                    if (transport) { try { await transport.close(); } catch (e) {} }
-                    transport = await TransportWebHID.request(true);
-                }
-                log(`GET_VERSION: ${bytesToHex(await exchange(0xE0, 0x01, 0x00, 0x00))}`, 'info');
-                const updater = makeUpdater();
-                const info = await updater.repair();
-                transport = updater.transport;
-                deviceInfo = parseVersionInfo(await exchange(0xE0, 0x01, 0x00, 0x00));
+        // Firmware: check / update / bootloader recovery. All logic lives in the
+        // ZKNOX Blue bundle (FirmwareUpdater + FirmwareUi); the page only wires it.
+        const firmwareUi = new FirmwareUi({
+            getTransport: () => transport,
+            setTransport: (t) => { transport = t; },
+            log, progress: updateProgress, showProgress,
+            onDeviceInfo: (info) => {
+                deviceInfo = { targetId: info.targetId, version: info.version, mcuVersion: info.mcuVersion, model: info.model };
                 document.getElementById('statusDot').classList.add('connected');
                 document.getElementById('connectionText').textContent = 'Connected';
                 document.getElementById('deviceModel').textContent = deviceInfo.model;
@@ -1683,59 +1556,10 @@
                 document.getElementById('deviceMcu').textContent = deviceInfo.mcuVersion || '-';
                 document.getElementById('deviceTarget').textContent = '0x' + deviceInfo.targetId.toString(16);
                 for (const id of ['refreshBtn', 'genuineBtn', 'firmwareBtn']) document.getElementById(id).disabled = false;
-                log(`✓ Device recovered: ${info.version}`, 'success');
-            } catch (error) {
-                console.error('Recovery error:', error);
-                log(`Recovery failed: ${error.message}`, 'error');
-                updateProgress(0, 'Recovery failed');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '🛠️ Bootloader Recovery';
-                setTimeout(() => showProgress(false), 5000);
-            }
-        };
-
-        // Reconnect modal: WebHID needs a user gesture to pair the re-enumerated device
-        // (after a reboot the bootloader / OSU shows up with another product id).
-        function showReconnectModal(message) {
-            return new Promise((resolve) => {
-                const overlay = document.createElement('div');
-                overlay.id = 'reconnect-overlay';
-                overlay.style.cssText = `
-                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.8); display: flex;
-                    align-items: center; justify-content: center; z-index: 9999;
-                `;
-                const modal = document.createElement('div');
-                modal.style.cssText = `
-                    background: #0a0a0f; border: 1px solid rgba(167, 139, 250, 0.3);
-                    border-radius: 16px; padding: 30px; text-align: center; max-width: 420px;
-                `;
-                modal.innerHTML = `
-                    <h3 style="color: #ffffff; margin: 0 0 15px 0;">🔌 Reconnect Device</h3>
-                    <p id="reconnect-message" style="color: #a78bfa; margin: 0 0 20px 0;">${message}</p>
-                    <button id="reconnect-btn" style="background: #238636; color: white; border: none;
-                        padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer;">🔌 Reconnect Ledger</button>
-                `;
-                overlay.appendChild(modal);
-                document.body.appendChild(overlay);
-                const btn = document.getElementById('reconnect-btn');
-                btn.onclick = async () => {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="loading"></span> Connecting...';
-                    try {
-                        const t = await TransportWebHID.request(true);
-                        document.body.removeChild(overlay);
-                        resolve(t);
-                    } catch (e) {
-                        btn.disabled = false;
-                        btn.textContent = '🔌 Reconnect Ledger';
-                        document.getElementById('reconnect-message').innerHTML =
-                            `<span style="color: #f85149;">Connection failed: ${e.message}</span><br>${message}`;
-                    }
-                };
-            });
-        }
+                refreshApps().catch(e => log(`Refresh failed: ${e.message}`, 'warning'));
+            },
+            config: { liveCommonVersion: LIVE_COMMON_VERSION, provider: PROVIDER, apiBase: BASE_API_V1_URL, socketBase: BASE_SOCKET_URL },
+        }).mount();
 
         // Install app
         window.installApp = async function(appName) {
@@ -1816,8 +1640,6 @@
         document.getElementById('connectBtn').addEventListener('click', connectDevice);
         document.getElementById('refreshBtn').addEventListener('click', refreshApps);
         document.getElementById('genuineBtn').addEventListener('click', genuineCheck);
-        document.getElementById('firmwareBtn').onclick = checkFirmware;
-        document.getElementById('recoveryBtn').addEventListener('click', bootloaderRecovery);
         document.getElementById('searchBox').addEventListener('input', renderApps);
         
         log('Ready - Click "Connect Ledger" to start', 'info');

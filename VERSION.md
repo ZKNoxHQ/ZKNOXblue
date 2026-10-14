@@ -1,5 +1,10 @@
 # VERSION
 
+## 1.2.0 — 2026-10-14
+- Nouveau module `src/firmwareUi.js` (`FirmwareUi`, exporté dans le bundle) : toute la glu des boutons firmware (check, update, bootloader recovery, modale de reconnexion, verrouillage des boutons, rafraîchissement du panneau device) sort de la page. `official-apps.html` ne contient plus qu'une instanciation de `FirmwareUi` avec les callbacks de la page (`log`, `updateProgress`, `showProgress`, `onDeviceInfo`).
+- Le script de `official-apps.html` est désormais identique à celui de la page `official-apps.html` du site zknox.com, au chemin du bundle près : une évolution du moteur arrive sur le site par un bump de submodule, sans reporter de code.
+- `dist/` reconstruit.
+
 ## 1.1.1 — 2026-10-13
 - Mise à jour de firmware validée sur Nano S+ (flux OSU → MCU).
 - `repair()` : le SE rapporté par le bootloader peut être `x.y.z-osu` (mise à jour interrompue après l'OSU) ; `get_firmware_version` renvoyait alors 404 et la réparation échouait → nouvelle `finalFirmwareForSe()` qui retombe sur `get_osu_version` puis `firmware_final_versions/<next>`. Après sortie du bootloader, si le SE est encore en OSU, fin de la mise à jour (firmware final si l'API en fournit un, sinon attente du reboot).
