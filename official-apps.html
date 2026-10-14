@@ -873,11 +873,10 @@
             </div>
     
             <div class="controls">
-                <button id="connectBtn">🔌 Connect Ledger</button>
+                <button id="connectBtn">🔌 Connect Ledger (USB)</button>
+                <button id="connectBleBtn" class="secondary" title="Nano X, Stax, Flex: device on the dashboard, Bluetooth on">📶 Connect Bluetooth</button>
                 <button id="refreshBtn" class="secondary" disabled>🔄 Refresh</button>
                 <button id="genuineBtn" class="secondary" disabled>✓ Genuine Check</button>
-                <button id="firmwareBtn" class="secondary" disabled>📦 Check Firmware</button>
-                <button id="recoveryBtn" class="secondary" title="Device stuck on 'Bootloader': plug it holding the left button, then click">🛠️ Bootloader Recovery</button>
             </div>
     
             <div class="status-card">
@@ -996,7 +995,7 @@
 
     <script type="module">
         // Import transport from bundle
-        import { TransportWebHID, FirmwareUi } from './dist/ledgerjs.bundle.js';
+        import { TransportWebHID, TransportWebBLE } from './dist/ledgerjs.bundle.js';
         
         // App icons mapping
         const APP_ICONS = {
@@ -1157,14 +1156,25 @@
         }
         
         // Connect to device
-        async function connectDevice() {
-            const btn = document.getElementById('connectBtn');
+        let transportKind = 'usb';
+        async function connectDevice(kind = 'usb') {
+            transportKind = kind;
+            const btn = document.getElementById(kind === 'ble' ? 'connectBleBtn' : 'connectBtn');
+            const idleLabel = kind === 'ble' ? '📶 Connect Bluetooth' : '🔌 Connect Ledger (USB)';
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span>Connecting...';
             
             try {
-                log('Requesting device access...');
-                transport = await TransportWebHID.request(true);
+                if (transport) { try { await transport.close(); } catch (e) {} transport = null; }
+                if (kind === 'ble') {
+                    if (!TransportWebBLE.isSupported()) throw new Error('Web Bluetooth not supported in this browser (Chrome/Edge, https or localhost)');
+                    log('Requesting Bluetooth device... (device on the dashboard, Bluetooth on; confirm pairing on the device)');
+                    transport = await TransportWebBLE.request(true);
+                    log(`Bluetooth link: ${transport.model.name}, MTU ${transport.mtu}`);
+                } else {
+                    log('Requesting device access...');
+                    transport = await TransportWebHID.request(true);
+                }
                 
                 log('Getting device info...');
                 // Transport returns data only (throws on error, including locked device 0x5515)
@@ -1183,9 +1193,8 @@
                 
                 document.getElementById('refreshBtn').disabled = false;
                 document.getElementById('genuineBtn').disabled = false;
-                firmwareUi.reset();
                 
-                log(`Connected to ${deviceInfo.model} (${deviceInfo.version})`, 'success');
+                log(`Connected to ${deviceInfo.model} (${deviceInfo.version}) over ${kind === 'ble' ? 'Bluetooth' : 'USB'}`, 'success');
                 
                 // Get installed apps and available apps
                 await refreshApps();
@@ -1194,7 +1203,7 @@
                 log(`Connection failed: ${error.message}`, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = transport ? '🔌 Reconnect' : '🔌 Connect Ledger';
+                btn.textContent = transport ? (kind === 'ble' ? '📶 Reconnect Bluetooth' : '🔌 Reconnect USB') : idleLabel;
             }
         }
         
@@ -1294,7 +1303,7 @@
                                                 log(`⚠️ FIRMWARE UPDATE REQUIRED`, 'error');
                                                 log(`Apps are available for firmware ${fwInfo.version}`, 'warning');
                                                 log(`Your device has firmware ${deviceInfo.version}`, 'warning');
-                                                log(`Please update firmware using "Check Firmware" button first!`, 'warning');
+                                                log(`Update the firmware first with ZKNOX Orange: <a href="https://zknox.com/sideloader.html">zknox.com/sideloader.html</a> (section Firmware)`, 'warning');
                                             }
                                         }
                                     }
@@ -1541,26 +1550,6 @@
             }
         };
         
-        // Firmware: check / update / bootloader recovery. All logic lives in the
-        // ZKNOX Blue bundle (FirmwareUpdater + FirmwareUi); the page only wires it.
-        const firmwareUi = new FirmwareUi({
-            getTransport: () => transport,
-            setTransport: (t) => { transport = t; },
-            log, progress: updateProgress, showProgress,
-            onDeviceInfo: (info) => {
-                deviceInfo = { targetId: info.targetId, version: info.version, mcuVersion: info.mcuVersion, model: info.model };
-                document.getElementById('statusDot').classList.add('connected');
-                document.getElementById('connectionText').textContent = 'Connected';
-                document.getElementById('deviceModel').textContent = deviceInfo.model;
-                document.getElementById('deviceFirmware').textContent = deviceInfo.version;
-                document.getElementById('deviceMcu').textContent = deviceInfo.mcuVersion || '-';
-                document.getElementById('deviceTarget').textContent = '0x' + deviceInfo.targetId.toString(16);
-                for (const id of ['refreshBtn', 'genuineBtn', 'firmwareBtn']) document.getElementById(id).disabled = false;
-                refreshApps().catch(e => log(`Refresh failed: ${e.message}`, 'warning'));
-            },
-            config: { liveCommonVersion: LIVE_COMMON_VERSION, provider: PROVIDER, apiBase: BASE_API_V1_URL, socketBase: BASE_SOCKET_URL },
-        }).mount();
-
         // Install app
         window.installApp = async function(appName) {
             if (!transport || !deviceInfo) {
@@ -1573,7 +1562,7 @@
                 log(`❌ Cannot install apps - firmware update required!`, 'error');
                 log(`Your device: firmware ${deviceInfo.version}`, 'warning');
                 log(`Apps require: firmware ${window.appsFirmwareVersion}`, 'warning');
-                log(`Please click "Check Firmware" to update your device first.`, 'info');
+                log(`Update the firmware first with ZKNOX Orange (zknox.com/sideloader.html, section Firmware).`, 'info');
                 return;
             }
             
@@ -1637,7 +1626,8 @@
         };
         
         // Event listeners
-        document.getElementById('connectBtn').addEventListener('click', connectDevice);
+        document.getElementById('connectBtn').addEventListener('click', () => connectDevice('usb'));
+        document.getElementById('connectBleBtn').addEventListener('click', () => connectDevice('ble'));
         document.getElementById('refreshBtn').addEventListener('click', refreshApps);
         document.getElementById('genuineBtn').addEventListener('click', genuineCheck);
         document.getElementById('searchBox').addEventListener('input', renderApps);

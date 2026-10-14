@@ -1,5 +1,10 @@
 # VERSION
 
+## 1.3.0 — 2026-10-14
+- Connexion Bluetooth : nouveau `src/transportBle.js` (`TransportWebBLE`, même code que ZKNOX Orange : Nano X / Stax / Flex, Web Bluetooth) exporté dans le bundle ; la page a un bouton « Connect Bluetooth » à côté de « Connect Ledger (USB) », USB par défaut. Installation, suppression et genuine check passent par le transport actif.
+- La mise à jour de firmware et la réparation bootloader quittent ZKNOX Blue pour ZKNOX Orange (`src/firmwareUpdater.js`, `src/firmwareUi.js` et les boutons supprimés) ; la page renvoie vers zknox.com/sideloader.html quand le catalogue exige un firmware plus récent.
+- `dist/` reconstruit.
+
 ## 1.2.0 — 2026-10-14
 - Nouveau module `src/firmwareUi.js` (`FirmwareUi`, exporté dans le bundle) : toute la glu des boutons firmware (check, update, bootloader recovery, modale de reconnexion, verrouillage des boutons, rafraîchissement du panneau device) sort de la page. `official-apps.html` ne contient plus qu'une instanciation de `FirmwareUi` avec les callbacks de la page (`log`, `updateProgress`, `showProgress`, `onDeviceInfo`).
 - Le script de `official-apps.html` est désormais identique à celui de la page `official-apps.html` du site zknox.com, au chemin du bundle près : une évolution du moteur arrive sur le site par un bump de submodule, sans reporter de code.

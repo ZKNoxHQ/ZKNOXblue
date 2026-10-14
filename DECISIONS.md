@@ -23,3 +23,11 @@
 **Décision.** Le dépôt moteur fournit tout le comportement via le bundle (`FirmwareUpdater` pour la logique, `FirmwareUi` pour la glu DOM), paramétré par des callbacks et des ids de boutons. Les pages ne gardent que le HTML, le style et le branchement. Le site consomme ce dépôt en submodule `zknox-blue/` et sa page diffère uniquement par le chemin du bundle. Même règle à appliquer à ZKNOXorange / `sideloader.html`.
 
 **Conséquence.** Toute logique ajoutée dans une page est un défaut : elle va dans `src/` et est exportée. Le diff entre les scripts des deux pages doit rester limité à la ligne d'import.
+
+## ADR-004 — Firmware chez Orange, Blue reste l'installeur d'apps (2026-10-14)
+
+**Contexte.** ADR-002/003 avaient mis la mise à jour de firmware dans Blue. Demande de la déplacer vers Orange, l'outil « développeur » du site, qui a déjà le transport Bluetooth et la sélection USB/Bluetooth.
+
+**Décision.** Blue ne fait que ce que son nom dit : apps officielles via le HSM, en USB ou en Bluetooth. Le moteur firmware (updater + glu UI, ADR-002/003) vit dans ZKNOXorange et la page `sideloader.html` du site. `transportBle.js` est copié d'Orange, comme le sont déjà `transport.js`, `hexParser.js`, `ledgerWrapper.js` : les deux dépôts restent indépendants, la synchronisation de ces modules partagés se fait par copie.
+
+**Conséquence.** Toute correction sur un module partagé doit être reportée dans l'autre dépôt dans la même journée. Une factorisation en paquet commun reste possible si la liste des modules copiés s'allonge.

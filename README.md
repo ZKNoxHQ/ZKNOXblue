@@ -15,11 +15,11 @@ ZKNOX Blue provides a web-based interface for installing official Ledger applica
 
 ## Features
 
-- 📱 **WebHID Support** - Works directly in Chrome/Edge browsers
+- 📱 **WebHID / Web Bluetooth** - Works directly in Chrome/Edge browsers
 - 🔐 **HSM-Backed Security** - Apps are signed using ZKNOX's secure infrastructure
 - ⚡ **Fast Installation** - Streamlined installation process
-- 🔍 **Firmware Check / Update** - Check and install firmware updates through Ledger's HSM, without Ledger Live
-- 🛠️ **Bootloader Recovery** - Repair a device stuck on "Bootloader" (plug it holding the left button)
+- 📶 **Bluetooth** - Connect a Nano X, Stax or Flex over Web Bluetooth (USB by default)
+- 🔍 **Firmware Check** - Shows the device firmware; updates are done with ZKNOX Orange (zknox.com/sideloader.html)
 
 ## Usage
 
@@ -29,13 +29,13 @@ ZKNOX Blue provides a web-based interface for installing official Ledger applica
 4. Choose an application to install
 5. Confirm on your device
 
-### Firmware update
+### Bluetooth
 
-1. **Check Firmware**: the page asks Ledger's manager API for the next firmware and whether the MCU must be flashed.
-2. **Update Firmware**: OSU install (confirm on the device), reboot, optional bootloader/MCU flashes, final firmware. The device re-enumerates after each reboot; when the page cannot re-open it silently it asks you to click **Reconnect Ledger** (WebHID needs a user gesture). Never unplug the device during a flash.
-3. If the device ends up on "Bootloader": unplug it, plug it back while holding the left button, then **Bootloader Recovery**.
+Click **Connect Bluetooth** instead of **Connect Ledger (USB)**: device on the dashboard, Bluetooth on, confirm the pairing on the device. Chrome/Edge only, https or localhost; on Linux BlueZ must be running.
 
-Same endpoints and same sequence as Ledger Live (`@ledgerhq/live-common` `updateFirmwareTask` / `firmwareUpdate-repair`), see `src/firmwareUpdater.js`.
+### Firmware
+
+Firmware update and bootloader recovery live in ZKNOX Orange (`sideloader.html`, section Firmware).
 
 ## Requirements
 
